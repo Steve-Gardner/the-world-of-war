@@ -16,18 +16,21 @@ for (const c of cardsEl.children) c.addEventListener("click", ev => { ev.stopPro
 function startGame() {
   if (state === "dying") return;
   if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state === "suspended") actx.resume();
+  if (touchMode) goFullscreenLandscape();
   if (state === "dead" || (state === "menu" && (!fresh || spawnPicked))) {
     if (!spawnPicked) spawnIdx = Math.floor(Math.random() * SPAWNS.length);
     spawnPicked = false; reset();
   }
-  fresh = false; state = "play"; restartEl.style.display = "none"; tutBtn.style.display = "none"; overlay.style.display = "none";
+  fresh = false; state = "play"; restartEl.style.display = "none"; tutBtn.style.display = "none"; exitTutBtn.style.display = "none"; overlay.style.display = "none";
   try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (err) {}
 }
 function pause() {
   if (state !== "play") return;
   state = "paused"; mouseDown = false; adsHeld = false; autoFire = false;
   titleEl.textContent = "PAUSED"; subEl.textContent = ""; cardsEl.style.display = "none"; restartEl.style.display = "none";
-  tutBtn.style.display = "none"; bloodBtn.style.display = "block"; hintEl.textContent = tut ? "Press L or click to resume  ·  X to exit the tutorial" : "Press L or click to resume"; overlay.style.display = "flex";
+  releaseTouch(); tutBtn.style.display = "none"; bloodBtn.style.display = "block"; exitTutBtn.style.display = tut ? "block" : "none";
+  setHint(tut ? "Press L or click to resume  ·  X to exit the tutorial" : "Press L or click to resume", "Tap anywhere to resume"); overlay.style.display = "flex";
 }
 tutBtn.addEventListener("click", ev => { ev.stopPropagation(); startTutorial(); });
 bloodBtn.addEventListener("click", ev => { ev.stopPropagation(); setNoBlood(!noBlood); });
@@ -35,9 +38,17 @@ setNoBlood(noBlood);
 overlay.addEventListener("click", startGame);
 document.addEventListener("pointerlockchange", () => { if (document.pointerLockElement !== canvas) pause(); });
 
+exitTutBtn.addEventListener("click", ev => { ev.stopPropagation(); exitTutorial(); });
+document.addEventListener("visibilitychange", () => { if (document.hidden) setTimeout(() => { if (document.hidden) pause(); }, 600); });   // pause when you switch apps/tabs (ignores brief flickers)
+function goFullscreenLandscape() {                                            // Android: go fullscreen and lock to landscape (iPhones don't allow this)
+  try {
+    const el = document.documentElement;
+    if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen().then(() => { screen.orientation && screen.orientation.lock && screen.orientation.lock("landscape").catch(() => {}); }).catch(() => {});
+  } catch (err) {}
+}
 addEventListener("keydown", e => {
   keys[e.code] = true;
-  if (e.code === "Space") { e.preventDefault(); if (state === "play" && P.jz <= 0 && !e.repeat) { P.jv = 6.4; P.jz = 0.001; beep(240, 0.08, "triangle", 0.06, 120); if (tut) tut.f.jump = true; } }
+  if (e.code === "Space") { e.preventDefault(); if (!e.repeat) doJump(); }
   if (tut && state === "play") {
     if (e.code === "Enter") tut.f.enter = true;
     if (e.code === "Tab") { e.preventDefault(); tutSkip(); }
@@ -61,13 +72,13 @@ addEventListener("keydown", e => {
     if (e.code === "ArrowLeft") selectTheme(THEME_ORDER[(ti + 2) % 3]);
     if (e.code === "ArrowRight" || e.code === "KeyT") selectTheme(THEME_ORDER[(ti + 1) % 3]);
     const n = +e.key;
-    if (n >= 1 && n <= SPAWNS.length) { spawnIdx = n - 1; spawnPicked = true; hintEl.textContent = `Spawn ${n} selected`; }
+    if (n >= 1 && n <= SPAWNS.length) { spawnIdx = n - 1; spawnPicked = true; setHint(`Spawn ${n} selected`); }
   }
   if ((e.code === "KeyL" || e.code === "Enter") && (state === "menu" || state === "dead" || state === "paused")) startGame();
   if (e.code === "Escape") pause();
 });
 addEventListener("keyup", e => { keys[e.code] = false; if (e.code === "KeyN") adsHeld = false; });
-addEventListener("mousedown", e => { if (state !== "play") return; if (e.button === 0) mouseDown = true; if (e.button === 2) adsHeld = true; });
+addEventListener("mousedown", e => { if (touchMode || state !== "play") return; if (e.button === 0) mouseDown = true; if (e.button === 2) adsHeld = true; });
 addEventListener("mouseup", e => { if (e.button === 0) mouseDown = false; if (e.button === 2) adsHeld = false; });
 addEventListener("contextmenu", e => e.preventDefault());
 addEventListener("mousemove", e => {
@@ -80,7 +91,7 @@ addEventListener("mousemove", e => {
 addEventListener("wheel", e => { if (state === "play") setWeapon(WPN[(WPN.indexOf(P.w) + (e.deltaY > 0 ? 1 : 2)) % 3]); }, { passive: true });
 
 // ---------- loop ----------
-let last = performance.now(), fpsAcc = 0, fpsN = 0, qualityDone = false;
+let last = performance.now(), fpsAcc = 0, fpsN = 0;
 function loop(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   try {
@@ -88,9 +99,14 @@ function loop(now) {
     else if (state === "dying") updateDying(dt);
     else if (state === "menu") { P.a += dt * 0.1; }
     renderFrame(dt);
-    if (!qualityDone && state === "play") {                       // adaptive resolution
-      fpsAcc += dt; fpsN++;
-      if (fpsN >= 90) { const fps = fpsN / fpsAcc; fpsAcc = 0; fpsN = 0; if (fps < 38 && PR > 0.7) { PR = Math.max(0.6, PR - 0.25); resize(); } else if (fps > 52) qualityDone = true; }
+    updateTouchUI();
+    if (!qualityDone && gfxSetting === "auto" && state === "play" && !document.hidden && dt < 0.4) {   // adaptive quality: step down only if the device is really slow
+      if (qWarm > 0) qWarm--; else { fpsAcc += dt; fpsN++; }
+      if (fpsN >= 90) {
+        const fps = fpsN / fpsAcc; fpsAcc = 0; fpsN = 0;
+        if (fps < 38) { if (curQ < 2) applyQuality(curQ + 1); else if (PR > 0.5) { PR = Math.max(0.5, PR - 0.12); resize(); } }
+        else if (fps > 52) qualityDone = true;
+      }
     }
   } catch (err) {
     if (!window.__lastErr) console.error(err);

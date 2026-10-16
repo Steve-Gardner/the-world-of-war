@@ -6,7 +6,13 @@ Created by **KrackedGames**.
 **Play:** open the game's web address in Chrome or Edge, click an era, and press **L** (or click) to start.
 Click **Install as app** on the title screen for a desktop icon that also works offline.
 
-## Controls
+## Phones and tablets
+The game detects touch devices automatically (Android and iPhone/iPad) and switches to on-screen controls:
+a floating thumbstick on the left (push it all the way to run), drag on the right to look, and buttons for fire, aim, jump, reload, grenade and weapon swap.
+Graphics quality also adapts: phones start at Medium and the game steps down by itself if it runs slowly.
+Use the **Controls** and **Graphics** buttons on the title screen to override either. On iPhone, use Share → Add to Home Screen for full-screen play.
+
+## Controls (keyboard and mouse)
 | Action | Key |
 |---|---|
 | Move / look | WASD / mouse |

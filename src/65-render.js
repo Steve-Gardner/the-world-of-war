@@ -11,7 +11,7 @@ function syncEntities(dt) {
     const rig = e.rig, gx = e.x * CELL, gz = e.y * CELL, h = rig.holder;
     h.position.set(gx, groundH(gx, gz) + (e.h || 0), gz); h.rotation.y = Math.PI / 2 - e.face;
     const dist = Math.hypot(gx - cp.x, gz - cp.z);
-    h.visible = dist < 115;
+    h.visible = dist < QUALITY[curQ].ents;
     if (!h.visible) return;
     poseSoldier(rig, e, dt, dead);
     if (rig.flashSprite) rig.flashSprite.visible = !dead && e.fired > 0;

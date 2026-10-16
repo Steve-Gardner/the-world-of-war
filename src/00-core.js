@@ -9,6 +9,15 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 // ===================== THE WORLD OF WAR — 3D engine =====================
 const canvas = document.getElementById("c");
+// ---------- device detection (phones/tablets get touch controls and lighter graphics) ----------
+const DEV = (() => {
+  const ua = navigator.userAgent || "", mm = q => (window.matchMedia ? matchMedia(q).matches : false);
+  const android = /Android/i.test(ua);
+  const iOS = !android && (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+  const coarse = mm("(pointer: coarse)"), fine = mm("(any-pointer: fine)");
+  const mobile = iOS || android || (coarse && !fine);
+  return { iOS, android, mobile, standalone: mm("(display-mode: standalone)") || navigator.standalone === true };
+})();
 const hudCv = document.getElementById("hud");
 const hud = hudCv.getContext("2d");
 const overlay = document.getElementById("overlay");
@@ -19,9 +28,13 @@ const hintEl = document.getElementById("hint");
 const restartEl = document.getElementById("restart");
 const tutBtn = document.getElementById("tutBtn");
 const bloodBtn = document.getElementById("bloodBtn");
+const exitTutBtn = document.getElementById("exitTutBtn");
+const gfxBtn = document.getElementById("gfxBtn");
+const ctlBtn = document.getElementById("ctlBtn");
+function setHint(dk, tc) { hintEl.innerHTML = `<span class="dk">${dk}</span><span class="tc">${tc || dk}</span>`; }
 let noBlood = true;                                                        // default: no blood (toggle with B)
 try { noBlood = localStorage.getItem("wow_blood") !== "1"; } catch (e) {}
-function setNoBlood(v) { noBlood = v; try { localStorage.setItem("wow_blood", v ? "0" : "1"); } catch (e) {} bloodBtn.textContent = noBlood ? "BLOOD: OFF  (B)" : "BLOOD: ON  (B)"; }
+function setNoBlood(v) { noBlood = v; try { localStorage.setItem("wow_blood", v ? "0" : "1"); } catch (e) {} bloodBtn.innerHTML = (noBlood ? "BLOOD: OFF" : "BLOOD: ON") + '<span class="dk">  (B)</span>'; }
 
 const CELL = 1.6;            // metres per map cell
 const WALLH = 3.2;           // wall height in metres
@@ -42,7 +55,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1;
-let PR = Math.min(window.devicePixelRatio || 1, 1.5);
+let PR = DEV.mobile ? 0.9 : Math.min(window.devicePixelRatio || 1, 1.5);
 const MAXANISO = Math.min(8, renderer.capabilities.getMaxAnisotropy());
 
 const scene = new THREE.Scene();

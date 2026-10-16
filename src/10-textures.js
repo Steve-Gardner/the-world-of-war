@@ -1,5 +1,6 @@
 // ===================== textures =====================
-const TS = 512;
+const TS = DEV.mobile ? 256 : 512;                         // lighter textures on phones
+const FS = DEV.mobile ? 256 : 512;
 const tint = a => `rgba(${a > 0 ? "255,255,255" : "0,0,0"},${Math.abs(a)})`;
 function noiseDots(g, n, amt, size = 1) {
   for (let i = 0; i < n; i++) { g.fillStyle = tint((Math.random() - 0.5) * amt); g.fillRect(Math.random() * 64, Math.random() * 64, size, size); }
@@ -122,7 +123,7 @@ function makeTexCv(base, kind) {
 }
 
 function floorTexCv(kind) {
-  const [fc, g] = mk(512, 512); g.scale(8, 8);
+  const [fc, g] = mk(FS, FS); g.scale(FS / 64, FS / 64);
   if (kind === "mud") {
     g.fillStyle = "#4b3b29"; g.fillRect(0, 0, 64, 64);
     for (let i = 0; i < 90; i++) { g.fillStyle = tint((Math.random() - 0.5) * 0.35); g.beginPath(); g.ellipse(Math.random() * 64, Math.random() * 64, 1 + Math.random() * 5, 1 + Math.random() * 3, Math.random() * 3, 0, 7); g.fill(); }

@@ -34,6 +34,8 @@ function drawHUD() {
     }
   }
 
+  const T = touchMode;
+  if (!T) {
   // ---- bottom-left: health ----
   const bx = 34 * u, by = H - 44 * u, bw = 280 * u, bh = 12 * u, low = P.hp <= 30;
   hud.fillStyle = "rgba(0,0,0,0.38)"; hud.fillRect(bx - 12 * u, by - 40 * u, bw + 24 * u, 76 * u);
@@ -63,8 +65,10 @@ function drawHUD() {
   hud.textAlign = "left"; hud.fillStyle = P.grenades > 0 ? "#fff" : "rgba(255,255,255,0.35)"; hud.font = font(13);
   hud.fillText(`G ◉ ×${P.grenades}`, rx - 292 * u, H - 94 * u);
 
+  } else drawTouchPanel(W, H, u, font, A, wd, am);
+
   // ---- minimap (rotating) ----
-  const mr = 82 * u, mx = 34 * u + mr, my = 34 * u + mr, RR = 22, cs = mr / RR;
+  const mr = (T ? 60 : 82) * u, mx = 34 * u + mr, my = 34 * u + mr, RR = 22, cs = mr / RR;
   hud.save(); hud.beginPath(); hud.arc(mx, my, mr, 0, TAU); hud.clip();
   hud.fillStyle = "rgba(6,10,14,0.62)"; hud.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
   hud.translate(mx, my); hud.rotate(-Math.PI / 2 - P.a);
@@ -100,11 +104,12 @@ function drawHUD() {
 
   // ---- kill feed + score ----
   hud.textAlign = "right"; let ky = 38 * u;
-  hud.font = font(14); hud.fillStyle = "#fff"; hud.fillText(`SCORE  ${score}`, W - 34 * u, ky); ky += 30 * u;
+  hud.font = font(14); hud.fillStyle = "#fff"; hud.fillText(`SCORE  ${score}`, T ? W - 78 * u : W - 34 * u, ky); ky += 30 * u;
+  if (T) ky = 34 * u + 2 * mr + 26 * u;                                          // on touch screens the feed sits under the minimap
   for (const f of killFeed) {
-    hud.globalAlpha = Math.min(1, f.t * 1.5); const w = hud.measureText(f.text).width;
-    hud.fillStyle = "rgba(0,0,0,0.42)"; hud.fillRect(W - 34 * u - w - 14 * u, ky - 12 * u, w + 22 * u, 24 * u);
-    hud.fillStyle = f.col; hud.fillText(f.text, W - 34 * u, ky); ky += 28 * u; hud.globalAlpha = 1;
+    hud.globalAlpha = Math.min(1, f.t * 1.5); hud.font = font(T ? 12 : 14); const w = hud.measureText(f.text).width, fx0 = T ? 34 * u : W - 34 * u;
+    hud.fillStyle = "rgba(0,0,0,0.42)"; hud.fillRect(T ? fx0 - 8 * u : fx0 - w - 14 * u, ky - 12 * u, w + 22 * u, 24 * u);
+    hud.fillStyle = f.col; hud.textAlign = T ? "left" : "right"; hud.fillText(f.text, fx0, ky); ky += (T ? 24 : 28) * u; hud.globalAlpha = 1;
   }
 
   // ---- banners ----

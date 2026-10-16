@@ -7,7 +7,7 @@ let tut = null;                                   // tutorial state (null when p
 const keys = {};
 let mouseDown = false, adsHeld = false, autoFire = false, spawnIdx = 0, spawnPicked = false;
 const curW = () => TH.weapons[P.w];
-const running = () => keys.ShiftLeft || keys.ShiftRight || keys.KeyC;     // hold Shift or C to run
+const running = () => keys.ShiftLeft || keys.ShiftRight || keys.KeyC || touchRun;     // hold Shift or C to run
 const entRoot = new THREE.Group(); scene.add(entRoot);
 
 function clearEntities() {
@@ -110,7 +110,7 @@ function reset() {
 
 function nextWave() {
   wave++; waveBanner = 2.6;
-  const n = Math.min(4 + wave * 2, 16);
+  const n = Math.min(4 + wave * 2, curQ >= 1 ? 12 : 16);
   for (let i = 0; i < n; i++) {
     let x, y, tries = 0;
     do { const ang = Math.random() * TAU, r = 14 + Math.random() * 16; x = P.x + Math.cos(ang) * r; y = P.y + Math.sin(ang) * r; tries++; } while (solid(x, y) && tries < 300);
@@ -240,6 +240,7 @@ function castEnemies(o, d, list, maxT) {
   return best;
 }
 
+function doJump() { if (state === "play" && P.jz <= 0) { P.jv = 6.4; P.jz = 0.001; beep(240, 0.08, "triangle", 0.06, 120); if (tut) tut.f.jump = true; } }
 function fire() {
   if (P.cd > 0 || P.reload > 0 || P.swapT > 0.1) return;
   const wd = curW();
@@ -254,6 +255,7 @@ function fire() {
   camera.getWorldDirection(_fw); _rt.set(1, 0, 0).applyQuaternion(camera.quaternion); _up.set(0, 1, 0).applyQuaternion(camera.quaternion);
   const spread = wd.spread * (1 - adsAmt * 0.65) * (1 + (P.moving ? 0.9 : 0)) * (1 + bloomShots * 1.6);
   _rd.copy(_fw).addScaledVector(_rt, rs() * spread * 2).addScaledVector(_up, rs() * spread * 2).normalize();
+  if (touchMode) assistAim();                                                   // gentle aim assist on touch screens
   _ro.copy(camera.position);
   const wall = castWorld(_ro, _rd, 160), en = castEnemies(_ro, _rd, enemies, wall ? wall.t : 160);
   const muzzle = _tmpA.copy(camera.position).addScaledVector(_fw, 0.9).addScaledVector(_rt, 0.13).addScaledVector(_up, -0.1);
@@ -438,11 +440,18 @@ function update(dt) {
   if (keys.KeyA) { mx += dirY; my -= dirX; }
   if (keys.ArrowLeft) P.a -= 2.2 * dt;
   if (keys.ArrowRight) P.a += 2.2 * dt;
+  const keyMove = mx !== 0 || my !== 0;
+  let speedF = 1;
+  if (touchMove.active) {                                                       // analog thumbstick
+    const tx = touchMove.x, ty = touchMove.y;
+    mx += dirX * -ty - dirY * tx; my += dirY * -ty + dirX * tx;
+    if (!keyMove) speedF = Math.min(1, Math.hypot(tx, ty));
+  }
   const len = Math.hypot(mx, my);
   P.moving = len > 0 || P.jz > 0;
   if (len > 0) {
     const sprint = running() && adsAmt < 0.3;
-    const sp = (sprint ? 4.6 : 3.1) * (P.w === "knife" ? 1.12 : 1) * (1 - adsAmt * 0.45) * dt / len;
+    const sp = (sprint ? 4.6 : 3.1) * (P.w === "knife" ? 1.12 : 1) * (1 - adsAmt * 0.45) * speedF * dt / len;
     tryMove(P, mx * sp, my * sp);
     bob += dt * (sprint ? 12 : 8);
   }
@@ -536,7 +545,7 @@ function updateDying(dt) {
     state = "dead";
     titleEl.textContent = "YOU DIED"; subEl.textContent = `Score ${score}  ·  Reached wave ${wave}`;
     cardsEl.style.display = "flex"; restartEl.style.display = "block"; tutBtn.style.display = "block";
-    hintEl.textContent = "← → switch era · 1–5 pick spawn · or click / press L";
+    setHint("← → switch era · 1–5 pick spawn · or click / press L", "Tap an era (or anywhere) to play again");
     overlay.style.display = "flex";
   }
 }
