@@ -1,6 +1,6 @@
 // Service worker: lets the game install as an app and run offline.
 // index.html is fetched fresh whenever you're online (so updates show up right away); everything else comes from the cache.
-const VERSION = "wow-1792184706";
+const VERSION = "wow-1792185170";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-maskable-512.png", "./vendor/three/build/three.module.min.js", "./vendor/three/examples/jsm/geometries/RoundedBoxGeometry.js", "./vendor/three/examples/jsm/postprocessing/EffectComposer.js", "./vendor/three/examples/jsm/postprocessing/MaskPass.js", "./vendor/three/examples/jsm/postprocessing/OutputPass.js", "./vendor/three/examples/jsm/postprocessing/Pass.js", "./vendor/three/examples/jsm/postprocessing/RenderPass.js", "./vendor/three/examples/jsm/postprocessing/ShaderPass.js", "./vendor/three/examples/jsm/postprocessing/UnrealBloomPass.js", "./vendor/three/examples/jsm/shaders/CopyShader.js", "./vendor/three/examples/jsm/shaders/LuminosityHighPassShader.js", "./vendor/three/examples/jsm/shaders/OutputShader.js", "./vendor/three/examples/jsm/utils/BufferGeometryUtils.js"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => {

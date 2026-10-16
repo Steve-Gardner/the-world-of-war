@@ -155,3 +155,22 @@ setTouchMode(wantTouch());
 });
 if (DEV.iOS && !DEV.standalone) document.body.classList.add("ios");
 setTouchMode(wantTouch());
+
+// ---------- no pinch / double-tap zoom (iOS Safari ignores user-scalable=no, so block it in code) ----------
+const zoomGuard = () => touchMode || DEV.mobile;
+const noZoom = e => { if (zoomGuard()) e.preventDefault(); };
+["gesturestart", "gesturechange", "gestureend"].forEach(t => document.addEventListener(t, noZoom, { passive: false }));
+document.addEventListener("dblclick", noZoom, { passive: false });
+let lastTouchEnd = 0;
+document.addEventListener("touchend", e => { const now = Date.now(); if (zoomGuard() && now - lastTouchEnd < 400) e.preventDefault(); lastTouchEnd = now; }, { passive: false });
+document.addEventListener("touchmove", e => { if (zoomGuard() && (e.touches.length > 1 || (e.scale && e.scale !== 1))) e.preventDefault(); }, { passive: false });
+const vpMeta = document.querySelector('meta[name="viewport"]'), VP_CONTENT = vpMeta ? vpMeta.content : "";
+let lastZoomFix = 0;
+function resetZoom() {                                                          // if the page ever gets zoomed, snap it back to normal
+  if (!vpMeta || !window.visualViewport || visualViewport.scale <= 1.01 || performance.now() - lastZoomFix < 600) return;
+  lastZoomFix = performance.now();
+  vpMeta.content = "width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover";
+  setTimeout(() => { vpMeta.content = VP_CONTENT; }, 150);
+}
+if (window.visualViewport) visualViewport.addEventListener("resize", resetZoom);
+touchEl.addEventListener("pointerdown", resetZoom, true); overlay.addEventListener("pointerdown", resetZoom, true);
