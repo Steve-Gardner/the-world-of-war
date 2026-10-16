@@ -1,0 +1,7 @@
+.DS_Store
+.claude/
+classic.html
+game-classic.js
+game.js
+__pycache__/
+*.log
