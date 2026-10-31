@@ -137,6 +137,18 @@ function topUpAllies() {
   if (added && wave > 1) { toast = 1.8; toastText = "REINFORCEMENTS ARRIVE"; }
 }
 
+function ejectFromWalls() {                                 // called when walls come back on: move anyone caught inside to the nearest open spot
+  const fix = o => {
+    if (!solid(o.x, o.y)) return;
+    const cx = Math.floor(o.x), cy = Math.floor(o.y);
+    for (let r = 1; r <= 10; r++) for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+      const nx = cx + dx + 0.5, ny = cy + dy + 0.5;
+      if (!solid(nx, ny) && !solid(nx + 0.4, ny) && !solid(nx - 0.4, ny) && !solid(nx, ny + 0.4) && !solid(nx, ny - 0.4)) { o.x = nx; o.y = ny; return; }
+    }
+  };
+  fix(P); for (const e of enemies) fix(e); for (const a of allies) fix(a); for (const c of corpses) fix(c); for (const k of pickups) fix(k);
+}
 function los(x0, y0, x1, y1) {
   const d = Math.hypot(x1 - x0, y1 - y0), steps = Math.ceil(d / 0.2);
   for (let i = 1; i < steps; i++) { const t = i / steps; if (solid(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t)) return false; }

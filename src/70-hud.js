@@ -100,7 +100,7 @@ function drawHUD() {
   hud.restore();
   hud.fillStyle = A; hud.beginPath(); hud.moveTo(cx2, cy2 - 15 * u); hud.lineTo(cx2 - 5 * u, cy2 - 22 * u); hud.lineTo(cx2 + 5 * u, cy2 - 22 * u); hud.closePath(); hud.fill();
   hud.font = font(12); hud.textAlign = "center"; hud.fillStyle = "rgba(255,255,255,0.85)";
-  hud.fillText(tut ? `TRAINING ARENA   ·   STEP ${tut.step + 1} / ${TUT_STEPS.length}` : `WAVE ${wave}   ·   HOSTILES ${enemies.length}   ·   ALLIES ${allies.length}`, cx2, cy2 + 30 * u);
+  hud.fillText(tut ? `TRAINING ARENA   ·   STEP ${tut.step + 1} / ${TUT_STEPS.length}` : `WAVE ${wave}   ·   HOSTILES ${enemies.length}   ·   ALLIES ${allies.length}` + (wallsOn ? "" : "   ·   WALLS OFF"), cx2, cy2 + 30 * u);
 
   // ---- kill feed + score ----
   hud.textAlign = "right"; let ky = 38 * u;

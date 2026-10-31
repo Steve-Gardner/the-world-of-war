@@ -152,19 +152,26 @@ function buildWorld(T) {
   tg.setAttribute("color", new THREE.BufferAttribute(col, 3)); tg.computeVertexNormals();
   const terrain = new THREE.Mesh(tg, res.floorMat); terrain.receiveShadow = true; group.add(terrain);
 
-  // walls (instanced, one mesh per material)
-  const counts = [0, 0, 0, 0];
-  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (MAP[y][x]) counts[MAP[y][x]]++;
+  // walls (instanced, one mesh per material). Interior walls can be toggled off; the outer boundary always stays.
   const mtx = new THREE.Matrix4(), c3 = new THREE.Color();
-  for (let t = 1; t <= 3; t++) {
-    if (!counts[t]) continue;
-    const im = new THREE.InstancedMesh(wallGeo, res.wallMats[t - 1], counts[t]); let n = 0;
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (MAP[y][x] === t) {
-      mtx.makeTranslation((x + 0.5) * CELL, (WALLH + 0.8) / 2 - 0.8, (y + 0.5) * CELL); im.setMatrixAt(n, mtx);
-      const v = 0.8 + Math.random() * 0.2; c3.setRGB(v, v, v); im.setColorAt(n, c3); n++;
+  const isBorder = (x, y) => x === 0 || y === 0 || x === MW - 1 || y === MH - 1;
+  const buildWalls = border => {
+    const g = new THREE.Group();
+    for (let t = 1; t <= 3; t++) {
+      let count = 0;
+      for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (MAP[y][x] === t && isBorder(x, y) === border) count++;
+      if (!count) continue;
+      const im = new THREE.InstancedMesh(wallGeo, res.wallMats[t - 1], count); let n = 0;
+      for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (MAP[y][x] === t && isBorder(x, y) === border) {
+        mtx.makeTranslation((x + 0.5) * CELL, (WALLH + 0.8) / 2 - 0.8, (y + 0.5) * CELL); im.setMatrixAt(n, mtx);
+        const v = 0.8 + Math.random() * 0.2; c3.setRGB(v, v, v); im.setColorAt(n, c3); n++;
+      }
+      im.castShadow = im.receiveShadow = true; im.frustumCulled = false; g.add(im);
     }
-    im.castShadow = im.receiveShadow = true; im.frustumCulled = false; group.add(im);
-  }
+    return g;
+  };
+  const interiorWalls = buildWalls(false); interiorWalls.visible = wallsOn;
+  group.add(buildWalls(true), interiorWalls);
 
   // props: rocks, debris, barrels, crates, themed extras
   const free = () => {
@@ -215,7 +222,7 @@ function buildWorld(T) {
   }
 
   scene.add(group);
-  world = { group, dispose };
+  world = { group, dispose, walls: interiorWalls };
   skyMesh.visible = true;
 }
 

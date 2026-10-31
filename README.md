@@ -22,6 +22,7 @@ Use the **Controls** and **Graphics** buttons on the title screen to override ei
 | Weapons | **1** pistol, **2** knife, **3** rifle (wheel / Q also swap) |
 | Grenade / reload | **G** / **R** |
 | Pause / fullscreen | **Esc** / **F** |
+| Walls on / off | **V** (or the Walls button on the title and pause screens) |
 | Tutorial / blood toggle (title screen) | **H** / **B** |
 
 ## For whoever edits the game

@@ -28,6 +28,7 @@ const hintEl = document.getElementById("hint");
 const restartEl = document.getElementById("restart");
 const tutBtn = document.getElementById("tutBtn");
 const bloodBtn = document.getElementById("bloodBtn");
+const wallsBtn = document.getElementById("wallsBtn");
 const exitTutBtn = document.getElementById("exitTutBtn");
 const gfxBtn = document.getElementById("gfxBtn");
 const ctlBtn = document.getElementById("ctlBtn");
@@ -41,7 +42,14 @@ const WALLH = 3.2;           // wall height in metres
 const EYE = 1.68;            // eye height in metres
 const MW = 80, MH = 80;
 let MAP = [];
-const solid = (x, y) => x < 0 || y < 0 || x >= MW || y >= MH || MAP[y | 0][x | 0] > 0;
+let wallsOn = true;                                          // V / menu toggle: with walls off only the outer boundary stays solid
+try { wallsOn = localStorage.getItem("wow_walls") !== "0"; } catch (e) {}
+const solid = (x, y) => {
+  if (x < 0 || y < 0 || x >= MW || y >= MH) return true;
+  const ix = x | 0, iy = y | 0;
+  if (!wallsOn && ix !== 0 && iy !== 0 && ix !== MW - 1 && iy !== MH - 1) return false;
+  return MAP[iy][ix] > 0;
+};
 const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;

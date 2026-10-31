@@ -120,10 +120,10 @@
   </div>
   <div id="tutBtn">▶ TUTORIAL <span>learn the controls in a training arena<em class="dk">  (H)</em></span></div>
   <div id="installBtn">⬇ INSTALL AS APP <span>adds a desktop icon, works offline</span></div>
-  <div id="opts"><div class="optb" id="bloodBtn">BLOOD: OFF</div><div class="optb" id="gfxBtn">GRAPHICS: AUTO</div><div class="optb" id="ctlBtn">CONTROLS: AUTO</div></div>
+  <div id="opts"><div class="optb" id="bloodBtn">BLOOD: OFF</div><div class="optb" id="wallsBtn">WALLS: ON</div><div class="optb" id="gfxBtn">GRAPHICS: AUTO</div><div class="optb" id="ctlBtn">CONTROLS: AUTO</div></div>
   <div class="optb" id="exitTutBtn">EXIT TUTORIAL</div>
   <p id="restart"><span class="dk">PRESS R TO RESTART</span><span class="tc">TAP TO RESTART</span></p>
-  <p class="keys">WASD move · Mouse look · Click fire · <b>Space</b> jump · hold <b>Z</b> to shoot · hold <b>N</b> or right-click to aim · <b>1</b> pistol · <b>2</b> knife · <b>3</b> rifle (or wheel / Q) · <b>G</b> grenade · R reload · hold <b>C</b> or Shift to run · F fullscreen · Esc pause</p>
+  <p class="keys">WASD move · Mouse look · Click fire · <b>Space</b> jump · hold <b>Z</b> to shoot · hold <b>N</b> or right-click to aim · <b>1</b> pistol · <b>2</b> knife · <b>3</b> rifle (or wheel / Q) · <b>G</b> grenade · <b>V</b> walls on/off · R reload · hold <b>C</b> or Shift to run · F fullscreen · Esc pause</p>
   <p class="touchkeys">Left thumb: move stick · Right thumb: drag to look · Big FIRE button · AIM, JUMP, RELOAD, grenade and SWAP buttons · Push the stick all the way to run</p>
   <p id="hint"><span class="dk">Click an era to play · ← → switch · 1–5 pick spawn · <b>H</b> tutorial · or press L</span><span class="tc">Tap an era to play</span></p>
   <div id="iosTip" class="tc">On iPhone: tap Share, then “Add to Home Screen” for full-screen play</div>
@@ -160,6 +160,7 @@ const hintEl = document.getElementById("hint");
 const restartEl = document.getElementById("restart");
 const tutBtn = document.getElementById("tutBtn");
 const bloodBtn = document.getElementById("bloodBtn");
+const wallsBtn = document.getElementById("wallsBtn");
 const exitTutBtn = document.getElementById("exitTutBtn");
 const gfxBtn = document.getElementById("gfxBtn");
 const ctlBtn = document.getElementById("ctlBtn");
@@ -173,7 +174,14 @@ const WALLH = 3.2;           // wall height in metres
 const EYE = 1.68;            // eye height in metres
 const MW = 80, MH = 80;
 let MAP = [];
-const solid = (x, y) => x < 0 || y < 0 || x >= MW || y >= MH || MAP[y | 0][x | 0] > 0;
+let wallsOn = true;                                          // V / menu toggle: with walls off only the outer boundary stays solid
+try { wallsOn = localStorage.getItem("wow_walls") !== "0"; } catch (e) {}
+const solid = (x, y) => {
+  if (x < 0 || y < 0 || x >= MW || y >= MH) return true;
+  const ix = x | 0, iy = y | 0;
+  if (!wallsOn && ix !== 0 && iy !== 0 && ix !== MW - 1 && iy !== MH - 1) return false;
+  return MAP[iy][ix] > 0;
+};
 const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -867,19 +875,26 @@ function buildWorld(T) {
   tg.setAttribute("color", new THREE.BufferAttribute(col, 3)); tg.computeVertexNormals();
   const terrain = new THREE.Mesh(tg, res.floorMat); terrain.receiveShadow = true; group.add(terrain);
 
-  // walls (instanced, one mesh per material)
-  const counts = [0, 0, 0, 0];
-  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (MAP[y][x]) counts[MAP[y][x]]++;
+  // walls (instanced, one mesh per material). Interior walls can be toggled off; the outer boundary always stays.
   const mtx = new THREE.Matrix4(), c3 = new THREE.Color();
-  for (let t = 1; t <= 3; t++) {
-    if (!counts[t]) continue;
-    const im = new THREE.InstancedMesh(wallGeo, res.wallMats[t - 1], counts[t]); let n = 0;
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (MAP[y][x] === t) {
-      mtx.makeTranslation((x + 0.5) * CELL, (WALLH + 0.8) / 2 - 0.8, (y + 0.5) * CELL); im.setMatrixAt(n, mtx);
-      const v = 0.8 + Math.random() * 0.2; c3.setRGB(v, v, v); im.setColorAt(n, c3); n++;
+  const isBorder = (x, y) => x === 0 || y === 0 || x === MW - 1 || y === MH - 1;
+  const buildWalls = border => {
+    const g = new THREE.Group();
+    for (let t = 1; t <= 3; t++) {
+      let count = 0;
+      for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (MAP[y][x] === t && isBorder(x, y) === border) count++;
+      if (!count) continue;
+      const im = new THREE.InstancedMesh(wallGeo, res.wallMats[t - 1], count); let n = 0;
+      for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (MAP[y][x] === t && isBorder(x, y) === border) {
+        mtx.makeTranslation((x + 0.5) * CELL, (WALLH + 0.8) / 2 - 0.8, (y + 0.5) * CELL); im.setMatrixAt(n, mtx);
+        const v = 0.8 + Math.random() * 0.2; c3.setRGB(v, v, v); im.setColorAt(n, c3); n++;
+      }
+      im.castShadow = im.receiveShadow = true; im.frustumCulled = false; g.add(im);
     }
-    im.castShadow = im.receiveShadow = true; im.frustumCulled = false; group.add(im);
-  }
+    return g;
+  };
+  const interiorWalls = buildWalls(false); interiorWalls.visible = wallsOn;
+  group.add(buildWalls(true), interiorWalls);
 
   // props: rocks, debris, barrels, crates, themed extras
   const free = () => {
@@ -930,7 +945,7 @@ function buildWorld(T) {
   }
 
   scene.add(group);
-  world = { group, dispose };
+  world = { group, dispose, walls: interiorWalls };
   skyMesh.visible = true;
 }
 
@@ -1736,6 +1751,18 @@ function topUpAllies() {
   if (added && wave > 1) { toast = 1.8; toastText = "REINFORCEMENTS ARRIVE"; }
 }
 
+function ejectFromWalls() {                                 // called when walls come back on: move anyone caught inside to the nearest open spot
+  const fix = o => {
+    if (!solid(o.x, o.y)) return;
+    const cx = Math.floor(o.x), cy = Math.floor(o.y);
+    for (let r = 1; r <= 10; r++) for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+      const nx = cx + dx + 0.5, ny = cy + dy + 0.5;
+      if (!solid(nx, ny) && !solid(nx + 0.4, ny) && !solid(nx - 0.4, ny) && !solid(nx, ny + 0.4) && !solid(nx, ny - 0.4)) { o.x = nx; o.y = ny; return; }
+    }
+  };
+  fix(P); for (const e of enemies) fix(e); for (const a of allies) fix(a); for (const c of corpses) fix(c); for (const k of pickups) fix(k);
+}
 function los(x0, y0, x1, y1) {
   const d = Math.hypot(x1 - x0, y1 - y0), steps = Math.ceil(d / 0.2);
   for (let i = 1; i < steps; i++) { const t = i / steps; if (solid(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t)) return false; }
@@ -2479,7 +2506,7 @@ function drawHUD() {
   hud.restore();
   hud.fillStyle = A; hud.beginPath(); hud.moveTo(cx2, cy2 - 15 * u); hud.lineTo(cx2 - 5 * u, cy2 - 22 * u); hud.lineTo(cx2 + 5 * u, cy2 - 22 * u); hud.closePath(); hud.fill();
   hud.font = font(12); hud.textAlign = "center"; hud.fillStyle = "rgba(255,255,255,0.85)";
-  hud.fillText(tut ? `TRAINING ARENA   ·   STEP ${tut.step + 1} / ${TUT_STEPS.length}` : `WAVE ${wave}   ·   HOSTILES ${enemies.length}   ·   ALLIES ${allies.length}`, cx2, cy2 + 30 * u);
+  hud.fillText(tut ? `TRAINING ARENA   ·   STEP ${tut.step + 1} / ${TUT_STEPS.length}` : `WAVE ${wave}   ·   HOSTILES ${enemies.length}   ·   ALLIES ${allies.length}` + (wallsOn ? "" : "   ·   WALLS OFF"), cx2, cy2 + 30 * u);
 
   // ---- kill feed + score ----
   hud.textAlign = "right"; let ky = 38 * u;
@@ -2717,6 +2744,14 @@ overlay.addEventListener("click", startGame);
 document.addEventListener("pointerlockchange", () => { if (document.pointerLockElement !== canvas) pause(); });
 
 exitTutBtn.addEventListener("click", ev => { ev.stopPropagation(); exitTutorial(); });
+function setWalls(on, announce) {
+  wallsOn = on; try { localStorage.setItem("wow_walls", on ? "1" : "0"); } catch (e) {}
+  if (world && world.walls) world.walls.visible = on;
+  wallsBtn.innerHTML = "WALLS: " + (on ? "ON" : "OFF") + '<span class="dk">  (V)</span>';
+  if (on && P) ejectFromWalls();
+  if (announce) { toast = 1.4; toastText = on ? "WALLS ON" : "WALLS OFF"; beep(on ? 520 : 300, 0.08, "triangle", 0.07, on ? 200 : -120); }
+}
+wallsBtn.addEventListener("click", ev => { ev.stopPropagation(); setWalls(!wallsOn, false); });
 document.addEventListener("visibilitychange", () => { if (document.hidden) setTimeout(() => { if (document.hidden) pause(); }, 600); });   // pause when you switch apps/tabs (ignores brief flickers)
 function goFullscreenLandscape() {                                            // Android: go fullscreen and lock to landscape (iPhones don't allow this)
   try {
@@ -2736,6 +2771,7 @@ addEventListener("keydown", e => {
   if (tut && state === "paused" && e.code === "KeyX") { exitTutorial(); return; }
   if (state === "menu" && e.code === "KeyH") { startTutorial(); return; }
   if (e.code === "KeyB" && state !== "play" && state !== "dying") setNoBlood(!noBlood);
+  if (e.code === "KeyV" && !e.repeat && state !== "dying" && state !== "dead") setWalls(!wallsOn, state === "play");
   if (e.code === "KeyN" && state === "play") adsHeld = true;                       // hold N (or right-click) to aim
   if (e.code === "KeyR") { if (state === "dead") { startGame(); return; } startReload(); }
   if (state === "play") {
@@ -2801,7 +2837,8 @@ window.__prof = () => {
   out.calls = renderer.info.render.calls; out.tris = renderer.info.render.triangles; out.programs = renderer.info.programs.length; out.geos = renderer.info.memory.geometries; out.tex = renderer.info.memory.textures;
   out.pAdd = fxAdd.n; out.pSmoke = fxSmoke.n; return out;
 };
-window.__g = () => ({ tut, TUT_STEPS, state, P, enemies, allies, corpses, pickups, grenades, wave, score, TH, camera, scene, renderer, composer, THREE, killFeed });
+window.__solid = (x, y) => solid(x, y);
+window.__g = () => ({ MAP, world, walls: wallsOn, tut, TUT_STEPS, state, P, enemies, allies, corpses, pickups, grenades, wave, score, TH, camera, scene, renderer, composer, THREE, killFeed });
 // debug helper: drop a test soldier relative to the player (used for visual checks)
 window.__spawn = (type = "rifle", fwd = 4, side = 0, o = {}) => {
   const ca = Math.cos(P.a), sa = Math.sin(P.a), x = P.x + ca * fwd - sa * side, y = P.y + sa * fwd + ca * side;
@@ -2813,6 +2850,7 @@ window.__hit = (e, dmg = 99, head = false, kind = "bullet", power = 0.8) => hitE
 window.__clear = () => { for (const e of enemies) entRoot.remove(e.rig.holder); for (const a of allies) entRoot.remove(a.rig.holder); enemies.length = 0; allies.length = 0; };
 selectTheme("ww1");
 if (!P) reset();
+setWalls(wallsOn, false);
 requestAnimationFrame(loop);
 
 // ===================== install as app, offline support, fullscreen =====================
@@ -2834,4 +2872,4 @@ addEventListener("keydown", e => {
 </body>
 </html>
 
-<!-- build 1792185170 -->
+<!-- build 1793486363 -->

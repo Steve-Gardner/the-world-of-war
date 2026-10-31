@@ -39,6 +39,14 @@ overlay.addEventListener("click", startGame);
 document.addEventListener("pointerlockchange", () => { if (document.pointerLockElement !== canvas) pause(); });
 
 exitTutBtn.addEventListener("click", ev => { ev.stopPropagation(); exitTutorial(); });
+function setWalls(on, announce) {
+  wallsOn = on; try { localStorage.setItem("wow_walls", on ? "1" : "0"); } catch (e) {}
+  if (world && world.walls) world.walls.visible = on;
+  wallsBtn.innerHTML = "WALLS: " + (on ? "ON" : "OFF") + '<span class="dk">  (V)</span>';
+  if (on && P) ejectFromWalls();
+  if (announce) { toast = 1.4; toastText = on ? "WALLS ON" : "WALLS OFF"; beep(on ? 520 : 300, 0.08, "triangle", 0.07, on ? 200 : -120); }
+}
+wallsBtn.addEventListener("click", ev => { ev.stopPropagation(); setWalls(!wallsOn, false); });
 document.addEventListener("visibilitychange", () => { if (document.hidden) setTimeout(() => { if (document.hidden) pause(); }, 600); });   // pause when you switch apps/tabs (ignores brief flickers)
 function goFullscreenLandscape() {                                            // Android: go fullscreen and lock to landscape (iPhones don't allow this)
   try {
@@ -58,6 +66,7 @@ addEventListener("keydown", e => {
   if (tut && state === "paused" && e.code === "KeyX") { exitTutorial(); return; }
   if (state === "menu" && e.code === "KeyH") { startTutorial(); return; }
   if (e.code === "KeyB" && state !== "play" && state !== "dying") setNoBlood(!noBlood);
+  if (e.code === "KeyV" && !e.repeat && state !== "dying" && state !== "dead") setWalls(!wallsOn, state === "play");
   if (e.code === "KeyN" && state === "play") adsHeld = true;                       // hold N (or right-click) to aim
   if (e.code === "KeyR") { if (state === "dead") { startGame(); return; } startReload(); }
   if (state === "play") {
@@ -123,7 +132,8 @@ window.__prof = () => {
   out.calls = renderer.info.render.calls; out.tris = renderer.info.render.triangles; out.programs = renderer.info.programs.length; out.geos = renderer.info.memory.geometries; out.tex = renderer.info.memory.textures;
   out.pAdd = fxAdd.n; out.pSmoke = fxSmoke.n; return out;
 };
-window.__g = () => ({ tut, TUT_STEPS, state, P, enemies, allies, corpses, pickups, grenades, wave, score, TH, camera, scene, renderer, composer, THREE, killFeed });
+window.__solid = (x, y) => solid(x, y);
+window.__g = () => ({ MAP, world, walls: wallsOn, tut, TUT_STEPS, state, P, enemies, allies, corpses, pickups, grenades, wave, score, TH, camera, scene, renderer, composer, THREE, killFeed });
 // debug helper: drop a test soldier relative to the player (used for visual checks)
 window.__spawn = (type = "rifle", fwd = 4, side = 0, o = {}) => {
   const ca = Math.cos(P.a), sa = Math.sin(P.a), x = P.x + ca * fwd - sa * side, y = P.y + sa * fwd + ca * side;
@@ -135,4 +145,5 @@ window.__hit = (e, dmg = 99, head = false, kind = "bullet", power = 0.8) => hitE
 window.__clear = () => { for (const e of enemies) entRoot.remove(e.rig.holder); for (const a of allies) entRoot.remove(a.rig.holder); enemies.length = 0; allies.length = 0; };
 selectTheme("ww1");
 if (!P) reset();
+setWalls(wallsOn, false);
 requestAnimationFrame(loop);
