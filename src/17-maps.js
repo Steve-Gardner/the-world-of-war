@@ -217,6 +217,7 @@ function setupRange() {
   waveBanner = 0; wave = 0; P.x = RANGE_X0; P.y = RANGE_Y0; P.a = 0; P.pitch = 0.02;
   P.ammo.primary.reserve = 999; P.ammo.pistol.reserve = 999; P.grenades = 9;
   try { range.best = +localStorage.getItem("wow_range_best") || 0; } catch (e) {}
+  spawnVehicle(RANGE_X0 + 6, RANGE_Y0 - 5, 0);
   RANGE_D.forEach((d, i) => {
     const cx = RANGE_X0 + d / CELL;
     RANGE_KINDS[i].forEach((kind, k) => rangeT.push(buildTarget(kind, cx, RANGE_Y0 + (k - 1) * RANGE_SPREAD[i], d)));

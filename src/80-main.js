@@ -88,6 +88,7 @@ addEventListener("keydown", e => {
     if (e.code === "Digit3") setWeapon("primary");
     if (e.code === "KeyQ") setWeapon(P.lastW);
     if (e.code === "KeyG") throwGrenade();
+    if (e.code === "KeyE" && !e.repeat) toggleVehicle();
   }
   if (state === "menu" || state === "dead") {
     const ti = THEME_ORDER.indexOf(themeKey);
@@ -146,7 +147,7 @@ window.__prof = () => {
   out.pAdd = fxAdd.n; out.pSmoke = fxSmoke.n; return out;
 };
 window.__solid = (x, y) => solid(x, y);
-window.__g = () => ({ range, rangeT, MAP, world, walls: wallsOn, tut, TUT_STEPS, state, P, enemies, allies, corpses, pickups, grenades, wave, score, TH, camera, scene, renderer, composer, THREE, killFeed });
+window.__g = () => ({ vehicles, drv, range, rangeT, MAP, world, walls: wallsOn, tut, TUT_STEPS, state, P, enemies, allies, corpses, pickups, grenades, wave, score, TH, camera, scene, renderer, composer, THREE, killFeed });
 // debug helper: drop a test soldier relative to the player (used for visual checks)
 window.__spawn = (type = "rifle", fwd = 4, side = 0, o = {}) => {
   const ca = Math.cos(P.a), sa = Math.sin(P.a), x = P.x + ca * fwd - sa * side, y = P.y + sa * fwd + ca * side;

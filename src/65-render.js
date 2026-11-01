@@ -27,9 +27,9 @@ function updateCamera(dt) {
   const df = state === "dying" || state === "dead" ? Math.min(1, deathT / 1.5) : 0, ease = df * df * (3 - 2 * df);
   const gy = groundH(P.x * CELL, P.y * CELL);
   const grounded = P.jz <= 0, bobY = P.moving && grounded ? Math.sin(bob * 2) * 0.032 : 0, bobX = P.moving && grounded ? Math.cos(bob) * 0.018 : 0;
-  const ey = lerp(EYE, 0.3, ease);
+  const ey = lerp(drv ? drv.T.eye : EYE, 0.3, ease), vy = drv ? drv.g.position.y - gy : 0;
   const yaw = -P.a - Math.PI / 2;
-  camera.position.set(P.x * CELL, gy + ey + P.jz + bobY * (1 - adsAmt * 0.6), P.y * CELL);
+  camera.position.set(P.x * CELL, gy + ey + vy + P.jz + bobY * (1 - adsAmt * 0.6), P.y * CELL);
   camera.rotation.set(0, yaw, 0);
   camera.translateX(bobX * (1 - adsAmt * 0.6));
   const sk = shake * 0.012;
@@ -46,7 +46,7 @@ const _vp = new THREE.Vector3();
 function updateVM(dt) {
   const set = VMS[themeKey]; if (!set) return;
   const df = state === "dying" || state === "dead" ? 1 : 0;
-  for (const k of ["primary", "pistol", "knife"]) set[k].holder.visible = (k === P.w) && !df;
+  for (const k of ["primary", "pistol", "knife"]) set[k].holder.visible = (k === P.w) && !df && !drv;
   const vm = set[P.w], wd = curW();
   const adsT = adsHeld && !wd.melee && P.reload <= 0 && P.swapT <= 0.05 && state === "play" ? 1 : 0;
   adsAmt = lerp(adsAmt, adsT, Math.min(1, dt * 11));
@@ -73,7 +73,7 @@ function updateVM(dt) {
 
 function renderFrame(dt) {
   const T = performance.now() / 1000;
-  syncEntities(dt); updateCamera(dt); updateWorld(); updateVM(dt); fxUpdate(dt);
+  syncEntities(dt); syncVehicles(dt); updateCamera(dt); updateWorld(); updateVM(dt); fxUpdate(dt);
   GU.time.value = T % 100;
   const low = state === "play" && P.hp < 30 ? (0.25 + 0.2 * Math.sin(T * 6)) * (1 - P.hp / 30) : 0;
   GU.hurt.value = Math.max(clamp(hurt * 1.6, 0, 1), low);

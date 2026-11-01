@@ -77,6 +77,7 @@ function drawHUD() {
   for (let y = -RR - 1; y <= RR + 1; y++) for (let x = -RR - 1; x <= RR + 1; x++) if (solid(pxi + x, pyi + y)) hud.fillRect((x - (P.x - pxi)) * cs, (y - (P.y - pyi)) * cs, cs + 0.5, cs + 0.5);
   hud.globalAlpha = 1;
   const dot = (o, col, r) => { const ex = (o.x - P.x) * cs, ey = (o.y - P.y) * cs; if (ex * ex + ey * ey < mr * mr) { hud.fillStyle = col; hud.beginPath(); hud.arc(ex, ey, r * u, 0, TAU); hud.fill(); } };
+  for (const v of vehicles) if (!v.dead && v !== drv) dot(v, "#5ac8ff", 4.4);
   for (const e of enemies) dot(e, TH.enemyCol, 3.2); for (const a of allies) dot(a, "#6f9", 3);
   hud.restore();
   hud.strokeStyle = "rgba(255,255,255,0.55)"; hud.lineWidth = 2 * u; hud.beginPath(); hud.arc(mx, my, mr, 0, TAU); hud.stroke();
@@ -116,6 +117,7 @@ function drawHUD() {
   hud.textAlign = "center";
   if (waveBanner > 0) { hud.globalAlpha = Math.min(1, waveBanner); hud.font = font(46); hud.fillStyle = "#fff"; hud.shadowColor = "rgba(0,0,0,0.6)"; hud.shadowBlur = 8; hud.fillText(story ? `WAVE ${wave} / ${story.goal}` : `WAVE ${wave}`, W / 2, H * 0.22); hud.font = font(15); hud.fillStyle = A; hud.fillText("ELIMINATE ALL HOSTILES", W / 2, H * 0.22 + 34 * u); hud.shadowBlur = 0; hud.globalAlpha = 1; }
   if (toast > 0) { hud.globalAlpha = Math.min(1, toast * 2); hud.font = font(18); hud.fillStyle = A; hud.fillText(toastText, W / 2, H * 0.3); hud.globalAlpha = 1; }
+  if (state === "play") drawVehicleHUD(W, H, u, font, A);
   if (range && state === "play") drawRange(W, H, u, font, A);
   if (tut && state === "play") drawTutorial(W, H, u, font, A);
   hud.textAlign = "left";

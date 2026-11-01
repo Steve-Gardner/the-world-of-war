@@ -97,7 +97,7 @@ function makeRig(e, S, scale) {
 function reset() {
   range = !tut && isRange() ? newRange() : null;
   MAP = tut ? genTutorialMap() : curMap().gen();
-  clearEntities(); fxReset(); clearRange();
+  clearEntities(); fxReset(); clearRange(); clearVehicles();
   buildWorld(TH);
   const sp = SPAWNS[spawnIdx], wp = TH.weapons;
   P = {
@@ -124,6 +124,7 @@ function nextWave() {
   }
   P.hp = Math.min(100, P.hp + 15);
   topUpAllies();
+  if (!tut && !range && !vehicles.some(v => !v.dead) && spawnVehicleNear()) { toast = 2.6; toastText = `${VTYPES[themeKey].name} READY  ·  walk up and press E`; }
 }
 function topUpAllies() {
   const want = Math.min(5, 3 + Math.floor((wave - 1) / 3));
@@ -148,7 +149,7 @@ function ejectFromWalls() {                                 // called when walls
       if (!solid(nx, ny) && !solid(nx + 0.4, ny) && !solid(nx - 0.4, ny) && !solid(nx, ny + 0.4) && !solid(nx, ny - 0.4)) { o.x = nx; o.y = ny; return; }
     }
   };
-  fix(P); for (const e of enemies) fix(e); for (const a of allies) fix(a); for (const c of corpses) fix(c); for (const k of pickups) fix(k);
+  fix(P); if (drv) { drv.x = P.x; drv.y = P.y; } for (const v of vehicles) fix(v); for (const e of enemies) fix(e); for (const a of allies) fix(a); for (const c of corpses) fix(c); for (const k of pickups) fix(k);
 }
 function los(x0, y0, x1, y1) {
   const d = Math.hypot(x1 - x0, y1 - y0), steps = Math.ceil(d / 0.2);
@@ -168,6 +169,7 @@ function setWeapon(w) {
   beep(260, 0.06, "triangle", 0.06);
 }
 function startReload() {
+  if (drv) return;
   if (state !== "play") return;
   const wd = curW(); if (wd.melee) return;
   const am = P.ammo[P.w];
@@ -253,8 +255,9 @@ function castEnemies(o, d, list, maxT) {
   return best;
 }
 
-function doJump() { if (state === "play" && P.jz <= 0) { P.jv = 6.4; P.jz = 0.001; beep(240, 0.08, "triangle", 0.06, 120); if (tut) tut.f.jump = true; } }
+function doJump() { if (!drv && state === "play" && P.jz <= 0) { P.jv = 6.4; P.jz = 0.001; beep(240, 0.08, "triangle", 0.06, 120); if (tut) tut.f.jump = true; } }
 function fire() {
+  if (drv) return;
   if (P.cd > 0 || P.reload > 0 || P.swapT > 0.1) return;
   const wd = curW();
   if (wd.melee) { stab(wd); return; }
@@ -324,7 +327,7 @@ function makeGrenadeMesh() {
   return g;
 }
 function throwGrenade() {
-  if (state !== "play" || P.grenades <= 0 || P.gcd > 0) return;
+  if (drv || state !== "play" || P.grenades <= 0 || P.gcd > 0) return;
   P.grenades--; P.gcd = 0.9; P.swapT = 0.28; P.reload = 0;
   camera.getWorldDirection(_fw);
   const g = { p: camera.position.clone().addScaledVector(_fw, 0.7).add(new THREE.Vector3(0, -0.2, 0)), v: _fw.clone().multiplyScalar(14).add(new THREE.Vector3(0, 3.4, 0)), fuse: 2.4, mesh: makeGrenadeMesh() };
@@ -332,7 +335,7 @@ function throwGrenade() {
   beep(300, 0.1, "triangle", 0.08, 200); noise(0.05, 0.08);
 }
 function explode(g) {
-  const RADm = 8, pc = g.p.x / CELL, pyc = g.p.z / CELL;
+  const RADm = g.rad || 8, pc = g.p.x / CELL, pyc = g.p.z / CELL;
   explosionFx(g.p.x, g.p.y, g.p.z, TH);
   noise(0.7, 0.55); beep(60, 0.5, "sawtooth", 0.25, -30);
   const pd = Math.hypot(g.p.x - camera.position.x, g.p.z - camera.position.z) / CELL;
@@ -342,14 +345,13 @@ function explode(g) {
   for (const e of enemies.slice()) {
     const d = Math.hypot(e.x - pc, e.y - pyc) * CELL;
     if (d < 28 * CELL) e.alert = true;
-    if (d < RADm && ok(e.x, e.y)) hitEnemy(e, Math.max(1, Math.ceil(8 * (1 - d / RADm))), false, null, { dir: new THREE.Vector3(e.x - pc, 0, e.y - pyc), kind: "blast", power: 1 - d / RADm });
+    if (d < RADm && ok(e.x, e.y)) hitEnemy(e, Math.max(1, Math.ceil((g.dmg || 8) * (1 - d / RADm))), false, null, { dir: new THREE.Vector3(e.x - pc, 0, e.y - pyc), kind: "blast", power: 1 - d / RADm });
   }
-  for (const a of allies.slice()) {
+  if (!g.own) for (const a of allies.slice()) {
     const d = Math.hypot(a.x - pc, a.y - pyc) * CELL;
     if (d < RADm && ok(a.x, a.y)) { a.hp -= Math.round(60 * (1 - d / RADm)); a.pain = 0.3; if (a.hp <= 0) killAlly(a, { dir: new THREE.Vector3(a.x - pc, 0, a.y - pyc), kind: "blast", power: 1 - d / RADm }); }
   }
-  const dp = Math.hypot(P.x - pc, P.y - pyc) * CELL;
-  if (dp < 7 && ok(P.x, P.y)) { P.hp -= Math.round(60 * (1 - dp / 7) * heroMul()); hurt = 0.7; addDmgInd(pc, pyc); }
+  if (ok(P.x, P.y)) vehicleExplosionHits(g, pc, pyc);
 }
 function updateGrenades(dt) {
   for (let i = grenades.length - 1; i >= 0; i--) {
@@ -462,7 +464,7 @@ function update(dt) {
     mx += dirX * -ty - dirY * tx; my += dirY * -ty + dirX * tx;
     if (!keyMove) speedF = Math.min(1, Math.hypot(tx, ty));
   }
-  const len = Math.hypot(mx, my);
+  const len = drv ? 0 : Math.hypot(mx, my);
   P.moving = len > 0 || P.jz > 0;
   if (len > 0) {
     const sprint = running() && adsAmt < 0.3;
@@ -474,6 +476,7 @@ function update(dt) {
     P.jv -= 18 * dt; P.jz += P.jv * dt;
     if (P.jz <= 0) { P.jz = 0; P.jv = 0; camKick += 0.012; beep(90, 0.07, "triangle", 0.08, -30); noise(0.05, 0.08); dust(P.x * CELL, groundH(P.x * CELL, P.y * CELL) + 0.05, P.y * CELL, 5, TH.key === "ww1" ? 0x6a5a40 : 0x778899, 0.25, 1.2, 0.8); }
   }
+  if (drv) driveUpdate(dt);
   P.cd -= dt; P.gcd -= dt; P.swapT = Math.max(0, P.swapT - dt); P.swing = Math.max(0, P.swing - dt / 0.3);
   bloomShots = Math.max(0, bloomShots - dt * 1.4);
   if (P.reload > 0) {
@@ -524,7 +527,7 @@ function update(dt) {
       if (hit) {
         const dmg = T.dmg[0] + Math.floor(Math.random() * (T.dmg[1] - T.dmg[0] + 1));
         if (tgtA) { tgtA.hp -= Math.round(dmg * 0.7); tgtA.pain = 0.2; if (tgtA.hp <= 0) killAlly(tgtA, { dir: new THREE.Vector3(tgtA.x - e.x, 0, tgtA.y - e.y), kind: "bullet" }); }
-        else { P.hp -= Math.max(1, Math.round(dmg * heroMul())); hurt = 0.4; shake = Math.max(shake, 0.3); camKick += 0.02; addDmgInd(e.x, e.y); beep(80, 0.2, "sawtooth", 0.15, -40); }
+        else damagePlayer(dmg, e);
       }
     }
   }

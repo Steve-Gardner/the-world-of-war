@@ -16,6 +16,7 @@ touchEl.innerHTML = `
   <div class="tb" id="tReload" data-act="reload">RELOAD</div>
   <div class="tb" id="tGren" data-act="gren">G</div>
   <div class="tb" id="tSwap" data-act="swap">SWAP</div>
+  <div class="tb" id="tVeh" data-act="veh">ENTER</div>
   <div class="tb tw" id="tSkip" data-act="tskip">SKIP</div>
   <div class="tb tw" id="tNext" data-act="tnext">NEXT ▶</div>
   <div class="tb tw" id="tPlay" data-act="tplay">PLAY</div>
@@ -55,6 +56,7 @@ function pressButton(btn, e) {
   else if (act === "reload") startReload();
   else if (act === "gren") throwGrenade();
   else if (act === "swap") setWeapon(WPN[(WPN.indexOf(P.w) + 1) % 3]);
+  else if (act === "veh") toggleVehicle();
   else if (act === "pause") pause();
   else if (tut && act === "tskip") tutSkip();
   else if (tut && act === "tnext") tut.f.enter = true;
@@ -133,6 +135,7 @@ function updateTouchUI() {
   $t("tGren").textContent = `G ×${P.grenades}`;
   $t("tSwap").innerHTML = `SWAP<br><small>${curW().tag}</small>`;
   const am = P.ammo[P.w]; $t("tReload").classList.toggle("warn", !curW().melee && am.mag <= Math.ceil(curW().mag * 0.25));
+  const vh = $t("tVeh"), nv = drv || nearVehicle(); vh.style.display = nv ? "flex" : "none"; vh.textContent = drv ? "EXIT" : "ENTER";
   const s = tut ? TUT_STEPS[tut.step] : null;
   $t("tSkip").style.display = s && !s.final ? "flex" : "none";
   $t("tNext").style.display = s && s.key === "ENTER" ? "flex" : "none";
