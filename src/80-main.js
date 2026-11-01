@@ -8,10 +8,20 @@ function selectTheme(key) {
   gunHemi.color.copy(hex(TH.hemi.sky)); gunHemi.groundColor.copy(hex(TH.hemi.ground)); gunHemi.intensity = TH.hemi.intensity;
   for (const c of cardsEl.children) c.classList.toggle("sel", c.dataset.t === key);
   if (state === "menu") subEl.textContent = TH.sub;
+  for (const c of chipsEl.children) c.style.display = key === "ww1" || c.dataset.m === "range" || c.dataset.m === "challenge" ? "" : "none";
+  if (key !== "ww1" && !isRange() && mapKey !== "front") selectMap("front");
   document.documentElement.dataset.theme = key;
   if (state === "menu") { reset(); fresh = true; P.pitch = 0.05; }
 }
 for (const c of cardsEl.children) c.addEventListener("click", ev => { ev.stopPropagation(); selectTheme(c.dataset.t); startGame(); });
+function selectMap(key) {
+  if (!MAPS[key]) return;
+  mapKey = key; try { localStorage.setItem("wow_map", key); } catch (e) {}
+  for (const c of chipsEl.children) c.classList.toggle("sel", c.dataset.m === key);
+  mapNoteEl.textContent = MAPS[key].note;
+  if (state === "menu") { reset(); fresh = true; P.pitch = 0.05; }
+}
+for (const c of chipsEl.children) c.addEventListener("click", ev => { ev.stopPropagation(); selectMap(c.dataset.m); });
 
 function startGame() {
   if (state === "dying") return;
@@ -28,9 +38,9 @@ function startGame() {
 function pause() {
   if (state !== "play") return;
   state = "paused"; mouseDown = false; adsHeld = false; autoFire = false;
-  titleEl.textContent = "PAUSED"; subEl.textContent = ""; cardsEl.style.display = "none"; restartEl.style.display = "none";
-  releaseTouch(); tutBtn.style.display = "none"; bloodBtn.style.display = "block"; exitTutBtn.style.display = tut ? "block" : "none";
-  setHint(tut ? "Press L or click to resume  ·  X to exit the tutorial" : "Press L or click to resume", "Tap anywhere to resume"); overlay.style.display = "flex";
+  titleEl.textContent = "PAUSED"; subEl.textContent = ""; cardsEl.style.display = "none"; mapsEl.style.display = "none"; restartEl.style.display = "none";
+  releaseTouch(); tutBtn.style.display = "none"; bloodBtn.style.display = "block"; exitTutBtn.style.display = tut || range ? "block" : "none"; exitTutBtn.textContent = tut ? "EXIT TUTORIAL" : "LEAVE RANGE";
+  setHint(tut ? "Press L or click to resume  ·  X to exit the tutorial" : range ? "Press L or click to resume  ·  X to leave the range" : "Press L or click to resume", "Tap anywhere to resume"); overlay.style.display = "flex";
 }
 tutBtn.addEventListener("click", ev => { ev.stopPropagation(); startTutorial(); });
 bloodBtn.addEventListener("click", ev => { ev.stopPropagation(); setNoBlood(!noBlood); });
@@ -63,7 +73,9 @@ addEventListener("keydown", e => {
     if (e.code === "KeyL" && TUT_STEPS[tut.step].final) { finishTutorial(); return; }
     if (e.code === "KeyX" && TUT_STEPS[tut.step].final) { exitTutorial(); return; }
   }
-  if (tut && state === "paused" && e.code === "KeyX") { exitTutorial(); return; }
+  if ((tut || range) && state === "paused" && e.code === "KeyX") { exitTutorial(); return; }
+  if (range && state === "play" && e.code === "KeyY" && !e.repeat) { reset(); return; }
+  if ((state === "menu" || state === "dead") && e.code === "KeyM") { const vis = MAP_ORDER.filter(k => themeKey === "ww1" || k === "range" || k === "challenge"); selectMap(vis[(vis.indexOf(mapKey) + 1) % vis.length]); }
   if (state === "menu" && e.code === "KeyH") { startTutorial(); return; }
   if (e.code === "KeyB" && state !== "play" && state !== "dying") setNoBlood(!noBlood);
   if (e.code === "KeyV" && !e.repeat && state !== "dying" && state !== "dead") setWalls(!wallsOn, state === "play");
@@ -133,7 +145,7 @@ window.__prof = () => {
   out.pAdd = fxAdd.n; out.pSmoke = fxSmoke.n; return out;
 };
 window.__solid = (x, y) => solid(x, y);
-window.__g = () => ({ MAP, world, walls: wallsOn, tut, TUT_STEPS, state, P, enemies, allies, corpses, pickups, grenades, wave, score, TH, camera, scene, renderer, composer, THREE, killFeed });
+window.__g = () => ({ range, rangeT, MAP, world, walls: wallsOn, tut, TUT_STEPS, state, P, enemies, allies, corpses, pickups, grenades, wave, score, TH, camera, scene, renderer, composer, THREE, killFeed });
 // debug helper: drop a test soldier relative to the player (used for visual checks)
 window.__spawn = (type = "rifle", fwd = 4, side = 0, o = {}) => {
   const ca = Math.cos(P.a), sa = Math.sin(P.a), x = P.x + ca * fwd - sa * side, y = P.y + sa * fwd + ca * side;
@@ -143,6 +155,7 @@ window.__spawn = (type = "rifle", fwd = 4, side = 0, o = {}) => {
 };
 window.__hit = (e, dmg = 99, head = false, kind = "bullet", power = 0.8) => hitEnemy(e, dmg, head, null, { dir: new THREE.Vector3(Math.cos(P.a), 0, Math.sin(P.a)), kind, power });
 window.__clear = () => { for (const e of enemies) entRoot.remove(e.rig.holder); for (const a of allies) entRoot.remove(a.rig.holder); enemies.length = 0; allies.length = 0; };
+selectMap(mapKey);
 selectTheme("ww1");
 if (!P) reset();
 setWalls(wallsOn, false);

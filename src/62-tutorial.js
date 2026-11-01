@@ -86,7 +86,7 @@ function startTutorial() {
 function exitTutorial() {
   tut = null; state = "menu"; mouseDown = false; adsHeld = false;
   document.exitPointerLock && document.exitPointerLock();
-  titleEl.textContent = "THE WORLD OF WAR"; cardsEl.style.display = "flex"; restartEl.style.display = "none"; tutBtn.style.display = "block";
+  titleEl.textContent = "THE WORLD OF WAR"; cardsEl.style.display = "flex"; mapsEl.style.display = "flex"; restartEl.style.display = "none"; tutBtn.style.display = "block";
   exitTutBtn.style.display = "none"; setHint("Click an era to play · ← → switch · 1–5 pick spawn · H tutorial · or press L", "Tap an era to play");
   overlay.style.display = "flex"; selectTheme(themeKey);
 }

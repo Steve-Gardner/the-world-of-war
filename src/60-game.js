@@ -95,8 +95,9 @@ function makeRig(e, S, scale) {
 }
 
 function reset() {
-  MAP = tut ? genTutorialMap() : genMap();
-  clearEntities(); fxReset();
+  range = !tut && isRange() ? newRange() : null;
+  MAP = tut ? genTutorialMap() : curMap().gen();
+  clearEntities(); fxReset(); clearRange();
   buildWorld(TH);
   const sp = SPAWNS[spawnIdx], wp = TH.weapons;
   P = {
@@ -105,7 +106,7 @@ function reset() {
     ammo: { primary: { mag: wp.primary.mag, reserve: wp.primary.reserve }, pistol: { mag: wp.pistol.mag, reserve: wp.pistol.reserve } },
   };
   autoFire = false; wave = 0; score = 0; deathT = 0; hurt = 0; shake = 0; adsAmt = 0; camKick = 0; toast = 0; boom = 0;
-  if (tut) setupTutorial(); else nextWave();
+  if (tut) setupTutorial(); else if (range) setupRange(); else nextWave();
 }
 
 function nextWave() {
@@ -259,7 +260,7 @@ function fire() {
   if (wd.melee) { stab(wd); return; }
   const am = P.ammo[P.w];
   if (am.mag <= 0) { beep(120, 0.05, "square", 0.08); P.cd = 0.25; startReload(); return; }
-  am.mag--; P.cd = wd.cd; recoil = 1; flash = 0.07; shake = Math.max(shake, wd.shake * 0.6);
+  am.mag--; if (range) range.shots++; P.cd = wd.cd; recoil = 1; flash = 0.07; shake = Math.max(shake, wd.shake * 0.6);
   camKick += wd.shake * (P.w === "pistol" ? 0.05 : 0.07) + 0.006; bloomShots = Math.min(1, bloomShots + 0.18);
   TH.shot(P.w === "pistol" ? "pistol" : "rifle");
   for (const e of enemies) if (Math.hypot(e.x - P.x, e.y - P.y) < (P.w === "pistol" ? 20 : 28)) e.alert = true;
@@ -271,7 +272,9 @@ function fire() {
   _ro.copy(camera.position);
   const wall = castWorld(_ro, _rd, 160), en = castEnemies(_ro, _rd, enemies, wall ? wall.t : 160);
   const muzzle = _tmpA.copy(camera.position).addScaledVector(_fw, 0.9).addScaledVector(_rt, 0.13).addScaledVector(_up, -0.1);
-  if (en) {
+  const rt = range ? castTargets(_ro, _rd, Math.min(wall ? wall.t : 160, en ? en.t : 160)) : null;
+  if (rt) { addTracer(muzzle, rt.p.clone(), TH.tracer); hitTarget(rt); }
+  else if (en) {
     const end = _tmpB.copy(_ro).addScaledVector(_rd, en.t);
     addTracer(muzzle, end.clone(), TH.tracer);
     hitEnemy(en.e, curW().dmg * (en.head ? 2 : 1), en.head, end.clone(), { dir: _rd.clone(), kind: "bullet" });
@@ -537,7 +540,8 @@ function update(dt) {
   updateAllies(dt);
   updateGrenades(dt);
   if (tut) tutUpdate(dt);
-  if (P.hp > 0 && enemies.length === 0 && !tut) nextWave();
+  if (range) rangeUpdate(dt);
+  if (P.hp > 0 && enemies.length === 0 && !tut && !range) nextWave();
 
   recoil = Math.max(0, recoil - dt * 7); flash = Math.max(0, flash - dt); hurt = Math.max(0, hurt - dt); hitMark = Math.max(0, hitMark - dt);
   toast = Math.max(0, toast - dt); shake = Math.max(0, shake - dt * 1.5); waveBanner = Math.max(0, waveBanner - dt); boom = Math.max(0, boom - dt);
@@ -556,7 +560,7 @@ function updateDying(dt) {
   if (deathT >= 1.9) {
     state = "dead";
     titleEl.textContent = "YOU DIED"; subEl.textContent = `Score ${score}  ·  Reached wave ${wave}`;
-    cardsEl.style.display = "flex"; restartEl.style.display = "block"; tutBtn.style.display = "block";
+    cardsEl.style.display = "flex"; mapsEl.style.display = "flex"; restartEl.style.display = "block"; tutBtn.style.display = "block";
     setHint("← → switch era · 1–5 pick spawn · or click / press L", "Tap an era (or anywhere) to play again");
     overlay.style.display = "flex";
   }

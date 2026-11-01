@@ -26,7 +26,7 @@ function genMap() {
 // ---------- terrain height ----------
 let craters = [];
 function groundH(sx, sz) {
-  let h = 0.2 * Math.sin(sx * 0.05) * Math.cos(sz * 0.043) + 0.1 * Math.sin(sx * 0.11 + sz * 0.07) + 0.04 * Math.sin(sz * 0.23 + 1.3);
+  let h = (mapH ? mapH(sx, sz) : 0) + 0.2 * Math.sin(sx * 0.05) * Math.cos(sz * 0.043) + 0.1 * Math.sin(sx * 0.11 + sz * 0.07) + 0.04 * Math.sin(sz * 0.23 + 1.3);
   for (const c of craters) {
     const dx = sx - c.x, dz = sz - c.z, d2 = dx * dx + dz * dz;
     if (d2 < c.r * c.r * 6) {
@@ -108,7 +108,8 @@ const wallGeo = (() => {
   return g;
 })();
 
-function buildWorld(T) {
+function buildWorld(T0) {
+  const L = lookFor(T0), T = Object.assign({}, T0, L); mapH = L.mapH || null;
   if (world) { scene.remove(world.group); world.dispose.forEach(d => d.dispose()); }
   const res = buildThemeRes(T), group = new THREE.Group(), dispose = [];
   const own = o => { dispose.push(o); return o; };
@@ -116,7 +117,8 @@ function buildWorld(T) {
   // environment look
   scene.fog = new THREE.FogExp2(hex(T.fog), T.fogDensity);
   scene.background = hex(T.fog);
-  scene.environment = res.env;
+  scene.environment = L.noEnv ? null : res.env;
+  skyMat.color.setRGB(...(L.skyTint || [1, 1, 1]));
   renderer.toneMappingExposure = T.exposure;
   skyMat.map = res.skyTex; skyMat.needsUpdate = true;
   sunLight.color.copy(hex(T.sun.color)); sunLight.intensity = T.sun.intensity;
@@ -125,16 +127,17 @@ function buildWorld(T) {
   hemiLight.groundColor.copy(hex(T.hemi.ground)); hemiLight.intensity = T.hemi.intensity;
   bloom.strength = T.bloom.s; bloom.radius = T.bloom.r; bloom.threshold = T.bloom.t;
   const g = T.grade;
+  gunSun.color.copy(hex(T.sun.color)); gunSun.intensity = T.sun.intensity * 1.2; gunHemi.color.copy(hex(T.hemi.sky)); gunHemi.groundColor.copy(hex(T.hemi.ground)); gunHemi.intensity = T.hemi.intensity;
   GU.gain.value.set(...g.gain); GU.lift.value.set(...g.lift); GU.gamma.value.set(...g.gamma);
   GU.sat.value = g.sat; GU.vig.value = g.vig; GU.grain.value = g.grain; GU.aberr.value = g.aberr; GU.scan.value = g.scan;
 
   // craters
   craters = [];
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0, nCr = L.craters === undefined ? 16 : L.craters; i < nCr; i++) {
     for (let t = 0; t < 40; t++) {
       const x = (6 + Math.random() * (MW - 12)) * CELL, z = (6 + Math.random() * (MH - 12)) * CELL;
       if (SPAWNS.some(([sx, sy]) => Math.hypot(sx * CELL - x, sy * CELL - z) < 14)) continue;
-      craters.push({ x, z, r: 2.6 + Math.random() * 3.2, d: 0.35 + Math.random() * 0.4 }); break;
+      craters.push({ x, z, r: (2.6 + Math.random() * 3.2) * (L.craterR || 1), d: 0.35 + Math.random() * 0.4 }); break;
     }
   }
 
@@ -142,7 +145,7 @@ function buildWorld(T) {
   const SIZE = (MW + 90) * CELL, SEG = 220;
   const tg = own(new THREE.PlaneGeometry(SIZE, SIZE, SEG, SEG)); tg.rotateX(-Math.PI / 2);
   const cx = MW * CELL / 2, cz = MH * CELL / 2, pos = tg.attributes.position, col = new Float32Array(pos.count * 3);
-  const tone = T.key === "ww1" ? [1, 0.95, 0.88] : T.key === "ww3" ? [0.9, 0.95, 1.05] : [1.05, 0.9, 1.1];
+  const tone = L.tone || (T.key === "ww1" ? [1, 0.95, 0.88] : T.key === "ww3" ? [0.9, 0.95, 1.05] : [1.05, 0.9, 1.1]);
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i) + cx, z = pos.getZ(i) + cz;
     pos.setX(i, x); pos.setZ(i, z); const h = groundH(x, z); pos.setY(i, h);
@@ -182,6 +185,7 @@ function buildWorld(T) {
     return null;
   };
   const scatter = (geo, mat, count, place, shadow = true) => {
+    if (L.noProps) return null;
     const im = new THREE.InstancedMesh(geo, mat, count), m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), s = new THREE.Vector3();
     let n = 0;
     for (let i = 0; i < count; i++) {
@@ -210,6 +214,8 @@ function buildWorld(T) {
     const pm = own(new THREE.MeshStandardMaterial({ color: 0x20262e, roughness: 0.5, metalness: 0.7, emissive: new THREE.Color(0.1, 0.8, 1), emissiveIntensity: 1.6, envMapIntensity: T.env }));
     scatter(own(new THREE.CylinderGeometry(0.05, 0.07, 3.4, 8)), pm, 36, (i, x, z, h, p, e, s) => { p.set(x, h + 1.7, z); e.set(0, 0, 0); s.set(1, 1, 1); }, false);
   }
+
+  if (L.extra) L.extra(group, own);
 
   // craters: scorch decal + reflective puddle
   const decalMat = own(new THREE.MeshBasicMaterial({ map: CRATER_TEX, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, fog: true }));

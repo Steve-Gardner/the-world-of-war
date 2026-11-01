@@ -38,6 +38,12 @@
   .card:hover { transform: translateY(-3px); border-color: #aaa; }
   .card.sel { border-color: var(--accent); box-shadow: 0 0 18px var(--accent); }
   .card.sel b { color: var(--accent); }
+  #maps { display: flex; flex-direction: column; align-items: center; margin: 2px 0 4px; }
+  #chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .chip { padding: 7px 14px; border: 1px solid #666; border-radius: 4px; background: rgba(0,0,0,.5); color: #ccc; font-size: 12px; letter-spacing: 2px; cursor: pointer; }
+  .chip:hover { border-color: var(--accent); color: #fff; }
+  .chip.sel { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 10px var(--accent); }
+  #mapNote { font-size: 13px !important; color: #aaa !important; min-height: 18px; }
   #tutBtn { margin: 6px 0 4px; padding: 10px 22px; border: 2px solid var(--accent); border-radius: 6px; background: rgba(0,0,0,.55); color: #fff; font-weight: 700; letter-spacing: 3px; cursor: pointer; transition: transform .12s, box-shadow .12s; }
   #tutBtn span { display: block; font-weight: 400; letter-spacing: 1px; font-size: 12px; color: #bbb; margin-top: 3px; }
   #tutBtn:hover { transform: translateY(-2px); box-shadow: 0 0 16px var(--accent); }
@@ -97,6 +103,7 @@
     .card i { margin: 2px 0; font-size: 11px; } .card span { display: none; } .card b { font-size: 14px; }
     #tutBtn { padding: 6px 14px; } #tutBtn span { display: none; }
     .optb { padding: 5px 10px; font-size: 10px; }
+    .chip { padding: 4px 8px; font-size: 10px; letter-spacing: 1px; } #mapNote { font-size: 11px !important; min-height: 0; }
   }
 </style>
 <script type="importmap">
@@ -118,6 +125,9 @@
     <div class="card" data-t="ww3"><b>WORLD WAR III</b><i>2087 · Neon ruins</i><span>Plasma rifle · sidearm · energy blade</span></div>
     <div class="card" data-t="ww10"><b>WORLD WAR 10</b><i>3050 · Alien invasion</i><span>Railgun · blaster · void blade</span></div>
   </div>
+  <div id="maps"><div id="chips">
+    <div class="chip" data-m="front">WESTERN FRONT</div><div class="chip" data-m="verdun">VERDUN</div><div class="chip" data-m="somme">THE SOMME</div><div class="chip" data-m="gallipoli">GALLIPOLI</div><div class="chip" data-m="ypres">YPRES</div><div class="chip" data-m="range">SHOOTING RANGE</div><div class="chip" data-m="challenge">RANGE CHALLENGE</div>
+  </div><p id="mapNote"></p></div>
   <div id="tutBtn">▶ TUTORIAL <span>learn the controls in a training arena<em class="dk">  (H)</em></span></div>
   <div id="installBtn">⬇ INSTALL AS APP <span>adds a desktop icon, works offline</span></div>
   <div id="opts"><div class="optb" id="bloodBtn">BLOOD: OFF</div><div class="optb" id="wallsBtn">WALLS: ON</div><div class="optb" id="gfxBtn">GRAPHICS: AUTO</div><div class="optb" id="ctlBtn">CONTROLS: AUTO</div></div>
