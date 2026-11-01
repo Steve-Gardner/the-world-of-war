@@ -100,7 +100,7 @@ function drawHUD() {
   hud.restore();
   hud.fillStyle = A; hud.beginPath(); hud.moveTo(cx2, cy2 - 15 * u); hud.lineTo(cx2 - 5 * u, cy2 - 22 * u); hud.lineTo(cx2 + 5 * u, cy2 - 22 * u); hud.closePath(); hud.fill();
   hud.font = font(12); hud.textAlign = "center"; hud.fillStyle = "rgba(255,255,255,0.85)";
-  hud.fillText(tut ? `TRAINING ARENA   ·   STEP ${tut.step + 1} / ${TUT_STEPS.length}` : range ? `SHOOTING RANGE   ·   ${TH.key === "ww1" ? "WWI" : TH.key === "ww3" ? "WW3" : "WW10"}` : `WAVE ${wave}   ·   HOSTILES ${enemies.length}   ·   ALLIES ${allies.length}` + (range || wallsOn ? "" : "   ·   WALLS OFF") + (!range && !tut && themeKey === "ww1" && mapKey !== "front" ? "   ·   " + MAPS[mapKey].name : ""), cx2, cy2 + 30 * u);
+  hud.fillText(tut ? `TRAINING ARENA   ·   STEP ${tut.step + 1} / ${TUT_STEPS.length}` : story ? `LEVEL ${story.lv + 1}  ·  ${STORY[story.lv].title}  ·  WAVE ${wave} / ${story.goal}  ·  ${HEROES[hero].name}` : range ? `SHOOTING RANGE   ·   ${TH.key === "ww1" ? "WWI" : TH.key === "ww3" ? "WW3" : "WW10"}` : `WAVE ${wave}   ·   HOSTILES ${enemies.length}   ·   ALLIES ${allies.length}` + (range || wallsOn ? "" : "   ·   WALLS OFF") + (!range && !tut && !story && themeKey === "ww1" && mapKey !== "front" ? "   ·   " + MAPS[mapKey].name : ""), cx2, cy2 + 30 * u);
 
   // ---- kill feed + score ----
   hud.textAlign = "right"; let ky = 38 * u;
@@ -114,7 +114,7 @@ function drawHUD() {
 
   // ---- banners ----
   hud.textAlign = "center";
-  if (waveBanner > 0) { hud.globalAlpha = Math.min(1, waveBanner); hud.font = font(46); hud.fillStyle = "#fff"; hud.shadowColor = "rgba(0,0,0,0.6)"; hud.shadowBlur = 8; hud.fillText(`WAVE ${wave}`, W / 2, H * 0.22); hud.font = font(15); hud.fillStyle = A; hud.fillText("ELIMINATE ALL HOSTILES", W / 2, H * 0.22 + 34 * u); hud.shadowBlur = 0; hud.globalAlpha = 1; }
+  if (waveBanner > 0) { hud.globalAlpha = Math.min(1, waveBanner); hud.font = font(46); hud.fillStyle = "#fff"; hud.shadowColor = "rgba(0,0,0,0.6)"; hud.shadowBlur = 8; hud.fillText(story ? `WAVE ${wave} / ${story.goal}` : `WAVE ${wave}`, W / 2, H * 0.22); hud.font = font(15); hud.fillStyle = A; hud.fillText("ELIMINATE ALL HOSTILES", W / 2, H * 0.22 + 34 * u); hud.shadowBlur = 0; hud.globalAlpha = 1; }
   if (toast > 0) { hud.globalAlpha = Math.min(1, toast * 2); hud.font = font(18); hud.fillStyle = A; hud.fillText(toastText, W / 2, H * 0.3); hud.globalAlpha = 1; }
   if (range && state === "play") drawRange(W, H, u, font, A);
   if (tut && state === "play") drawTutorial(W, H, u, font, A);

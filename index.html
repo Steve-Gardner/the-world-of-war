@@ -44,6 +44,20 @@
   .chip:hover { border-color: var(--accent); color: #fff; }
   .chip.sel { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 10px var(--accent); }
   #mapNote { font-size: 13px !important; color: #aaa !important; min-height: 18px; }
+  #storyBtn { margin: 8px 0 4px; padding: 10px 22px; border: 2px solid #ffd24a; border-radius: 6px; background: rgba(60,40,0,.55); color: #ffd24a; font-weight: 700; letter-spacing: 3px; cursor: pointer; transition: transform .12s, box-shadow .12s; }
+  #storyBtn span { display: block; font-weight: 400; letter-spacing: 1px; font-size: 12px; color: #ddd; margin-top: 3px; }
+  #storyBtn:hover { transform: translateY(-2px); box-shadow: 0 0 16px #ffd24a; }
+  body.storyui #opts, body.storyui .keys, body.storyui .touchkeys, body.storyui #hint, body.storyui #iosTip, body.storyui #credit { display: none !important; }
+  #story { display: none; flex-direction: column; align-items: center; gap: 10px; max-width: 760px; margin-top: 6px; }
+  #storyText { font-size: 17px !important; color: #eee !important; line-height: 1.5; margin: 6px 0 !important; }
+  #heroRow { display: flex; gap: 10px; }
+  #lvGrid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .lv { width: 118px; box-sizing: border-box; padding: 10px 6px; border: 2px solid #777; border-radius: 6px; background: rgba(20,20,20,.85); cursor: pointer; }
+  .lv b { display: block; font-size: 24px; color: #fff; } .lv i { display: block; font-style: normal; font-size: 11px; color: #bbb; margin-top: 2px; letter-spacing: 1px; }
+  .lv.cur { border-color: #ffd24a; box-shadow: 0 0 14px #ffd24a; } .lv.lock { opacity: .4; cursor: default; }
+  .lv:not(.lock):hover { border-color: #fff; }
+  #storyBtns { display: flex; gap: 12px; margin-top: 6px; }
+  #storyGo { border-color: #6f9; color: #6f9; padding: 10px 24px; font-size: 14px; }
   #tutBtn { margin: 6px 0 4px; padding: 10px 22px; border: 2px solid var(--accent); border-radius: 6px; background: rgba(0,0,0,.55); color: #fff; font-weight: 700; letter-spacing: 3px; cursor: pointer; transition: transform .12s, box-shadow .12s; }
   #tutBtn span { display: block; font-weight: 400; letter-spacing: 1px; font-size: 12px; color: #bbb; margin-top: 3px; }
   #tutBtn:hover { transform: translateY(-2px); box-shadow: 0 0 16px var(--accent); }
@@ -103,6 +117,7 @@
     .card i { margin: 2px 0; font-size: 11px; } .card span { display: none; } .card b { font-size: 14px; }
     #tutBtn { padding: 6px 14px; } #tutBtn span { display: none; }
     .optb { padding: 5px 10px; font-size: 10px; }
+    .lv { width: 92px; padding: 5px 4px; } .lv b { font-size: 16px; } .lv i { font-size: 9px; } #storyText { font-size: 13px !important; margin: 2px 0 !important; } #story { gap: 5px; } #storyBtn { padding: 6px 14px; } #storyBtn span { display: none; }
     .chip { padding: 4px 8px; font-size: 10px; letter-spacing: 1px; } #mapNote { font-size: 11px !important; min-height: 0; }
   }
 </style>
@@ -128,6 +143,8 @@
   <div id="maps"><div id="chips">
     <div class="chip" data-m="front">WESTERN FRONT</div><div class="chip" data-m="verdun">VERDUN</div><div class="chip" data-m="somme">THE SOMME</div><div class="chip" data-m="gallipoli">GALLIPOLI</div><div class="chip" data-m="ypres">YPRES</div><div class="chip" data-m="range">SHOOTING RANGE</div><div class="chip" data-m="challenge">RANGE CHALLENGE</div>
   </div><p id="mapNote"></p></div>
+  <div id="storyBtn">★ STORY MODE <span>9 levels · play as Jeff Sr. or Jeff Jr.</span></div>
+  <div id="story"><div id="heroRow"></div><p id="storyText"></p><div id="lvGrid"></div><div id="storyBtns"><div class="optb" id="storyGo">START</div><div class="optb" id="storyBack">BACK</div></div></div>
   <div id="tutBtn">▶ TUTORIAL <span>learn the controls in a training arena<em class="dk">  (H)</em></span></div>
   <div id="installBtn">⬇ INSTALL AS APP <span>adds a desktop icon, works offline</span></div>
   <div id="opts"><div class="optb" id="bloodBtn">BLOOD: OFF</div><div class="optb" id="wallsBtn">WALLS: ON</div><div class="optb" id="gfxBtn">GRAPHICS: AUTO</div><div class="optb" id="ctlBtn">CONTROLS: AUTO</div></div>
@@ -844,8 +861,8 @@ MAPS.challenge.look = MAPS.range.look;
 const MAP_ORDER = ["front", "verdun", "somme", "gallipoli", "ypres", "range", "challenge"];
 let mapKey = "front";
 try { const k = localStorage.getItem("wow_map"); if (MAPS[k]) mapKey = k; } catch (e) {}
-const isRange = () => mapKey === "range" || mapKey === "challenge";           // the range exists in every era
-const curMap = () => (themeKey === "ww1" || isRange() ? MAPS[mapKey] : MAPS.front);
+const isRange = () => !story && mapKey === "range" || mapKey === "challenge";           // the range exists in every era
+const curMap = () => (story ? MAPS[STORY[story.lv].map] : themeKey === "ww1" || isRange() ? MAPS[mapKey] : MAPS.front);
 const lookFor = T => (tut ? {} : isRange() ? (T.key === "ww1" ? MAPS.range.look : { craters: 0, noProps: true }) : T.key === "ww1" && curMap().look) || {};
 let mapH = null;                                                         // terrain shaper for the current map (read by groundH)
 let range = null;                                                        // shooting-range state (null when not on the range)
@@ -2294,7 +2311,7 @@ function explode(g) {
     if (d < RADm && ok(a.x, a.y)) { a.hp -= Math.round(60 * (1 - d / RADm)); a.pain = 0.3; if (a.hp <= 0) killAlly(a, { dir: new THREE.Vector3(a.x - pc, 0, a.y - pyc), kind: "blast", power: 1 - d / RADm }); }
   }
   const dp = Math.hypot(P.x - pc, P.y - pyc) * CELL;
-  if (dp < 7 && ok(P.x, P.y)) { P.hp -= Math.round(60 * (1 - dp / 7)); hurt = 0.7; addDmgInd(pc, pyc); }
+  if (dp < 7 && ok(P.x, P.y)) { P.hp -= Math.round(60 * (1 - dp / 7) * heroMul()); hurt = 0.7; addDmgInd(pc, pyc); }
 }
 function updateGrenades(dt) {
   for (let i = grenades.length - 1; i >= 0; i--) {
@@ -2411,7 +2428,7 @@ function update(dt) {
   P.moving = len > 0 || P.jz > 0;
   if (len > 0) {
     const sprint = running() && adsAmt < 0.3;
-    const sp = (sprint ? 4.6 : 3.1) * (P.w === "knife" ? 1.12 : 1) * (1 - adsAmt * 0.45) * speedF * dt / len;
+    const sp = (sprint ? 4.6 : 3.1) * heroSpd() * (P.w === "knife" ? 1.12 : 1) * (1 - adsAmt * 0.45) * speedF * dt / len;
     tryMove(P, mx * sp, my * sp);
     bob += dt * (sprint ? 12 : 8);
   }
@@ -2469,7 +2486,7 @@ function update(dt) {
       if (hit) {
         const dmg = T.dmg[0] + Math.floor(Math.random() * (T.dmg[1] - T.dmg[0] + 1));
         if (tgtA) { tgtA.hp -= Math.round(dmg * 0.7); tgtA.pain = 0.2; if (tgtA.hp <= 0) killAlly(tgtA, { dir: new THREE.Vector3(tgtA.x - e.x, 0, tgtA.y - e.y), kind: "bullet" }); }
-        else { P.hp -= dmg; hurt = 0.4; shake = Math.max(shake, 0.3); camKick += 0.02; addDmgInd(e.x, e.y); beep(80, 0.2, "sawtooth", 0.15, -40); }
+        else { P.hp -= Math.max(1, Math.round(dmg * heroMul())); hurt = 0.4; shake = Math.max(shake, 0.3); camKick += 0.02; addDmgInd(e.x, e.y); beep(80, 0.2, "sawtooth", 0.15, -40); }
       }
     }
   }
@@ -2486,7 +2503,7 @@ function update(dt) {
   updateGrenades(dt);
   if (tut) tutUpdate(dt);
   if (range) rangeUpdate(dt);
-  if (P.hp > 0 && enemies.length === 0 && !tut && !range) nextWave();
+  if (P.hp > 0 && enemies.length === 0 && !tut && !range) { if (story && wave >= story.goal) storyWin(); else nextWave(); }
 
   recoil = Math.max(0, recoil - dt * 7); flash = Math.max(0, flash - dt); hurt = Math.max(0, hurt - dt); hitMark = Math.max(0, hitMark - dt);
   toast = Math.max(0, toast - dt); shake = Math.max(0, shake - dt * 1.5); waveBanner = Math.max(0, waveBanner - dt); boom = Math.max(0, boom - dt);
@@ -2508,6 +2525,7 @@ function updateDying(dt) {
     cardsEl.style.display = "flex"; mapsEl.style.display = "flex"; restartEl.style.display = "block"; tutBtn.style.display = "block";
     setHint("← → switch era · 1–5 pick spawn · or click / press L", "Tap an era (or anywhere) to play again");
     overlay.style.display = "flex";
+    if (story) showStory("lose");
   }
 }
 
@@ -2599,7 +2617,7 @@ function startTutorial() {
 function exitTutorial() {
   tut = null; state = "menu"; mouseDown = false; adsHeld = false;
   document.exitPointerLock && document.exitPointerLock();
-  titleEl.textContent = "THE WORLD OF WAR"; cardsEl.style.display = "flex"; mapsEl.style.display = "flex"; restartEl.style.display = "none"; tutBtn.style.display = "block";
+  titleEl.textContent = "THE WORLD OF WAR"; cardsEl.style.display = "flex"; mapsEl.style.display = "flex"; restartEl.style.display = "none"; tutBtn.style.display = "block"; storyBtn.style.display = "block";
   exitTutBtn.style.display = "none"; setHint("Click an era to play · ← → switch · 1–5 pick spawn · H tutorial · or press L", "Tap an era to play");
   overlay.style.display = "flex"; selectTheme(themeKey);
 }
@@ -2652,6 +2670,94 @@ function drawTutorial(W, H, u, font, A) {
   if (tut.doneT > 0) { hud.globalAlpha = Math.min(1, tut.doneT * 2); hud.textAlign = "center"; hud.fillStyle = "#6f9"; hud.font = font(30); hud.fillText("✓ STEP COMPLETE", W / 2, H * 0.3); }
   hud.restore();
 }
+
+// ===================== story mode: 9 levels, play as Jeff Sr. or Jeff Jr. =====================
+const STORY = [
+  { era: "ww1", map: "front", goal: 3, title: "OVER THE TOP",
+    brief: "France, 1917. {me} climbs out of the trench and into no man's land, with {other} close behind. Clear the enemy from the front line.",
+    win: "The line holds. {other} wipes the mud off and grins. One battle down, but the war is far from over." },
+  { era: "ww1", map: "gallipoli", goal: 3, title: "THE LANDING",
+    brief: "Gallipoli, 1915. The boats hit the beach under fire. {me} and {other} must storm the shore and take the dunes before the tide of the battle turns.",
+    win: "The beach is theirs. Up on the cliffs, the Turkish trenches are waiting for the next push." },
+  { era: "ww1", map: "verdun", goal: 4, title: "HOLD THE FORT",
+    brief: "Verdun, 1916. The old fort is a pile of rubble, and the enemy wants it back. Hold it with everything you have.",
+    win: "The fort stands, barely. {other} finds a scorched map pointing toward the Somme." },
+  { era: "ww1", map: "somme", goal: 4, title: "NO MAN'S LAND",
+    brief: "The Somme, 1916. Two trench lines and a field of craters between them. Cross it, keep moving, and keep {other} covered.",
+    win: "Across the wire and into their trench. Tonight the sky is clear. Tomorrow, Ypres." },
+  { era: "ww1", map: "ypres", goal: 5, title: "NIGHT AT YPRES",
+    brief: "Ypres, 1917. Fog, flooded streets and a moonless night. Something is moving in the ruins of the old hall. Stay sharp.",
+    win: "At dawn a strange light fills the sky. {me} and {other} blink, and the trenches are gone." },
+  { era: "ww3", map: "front", goal: 4, title: "NEON RUINS",
+    brief: "2087. The Jeffs wake up in a city of neon and ruins. Machines are hunting them. Find a way through the streets.",
+    win: "The first machines fall. A faint signal is coming from the old tower across the city." },
+  { era: "ww3", map: "front", goal: 5, title: "MACHINE UPRISING",
+    brief: "The machines have dug in around the signal tower. Break their line so {other} can reach it.",
+    win: "The tower hums, then the sky tears open and pulls {me} and {other} through." },
+  { era: "ww10", map: "front", goal: 5, title: "ALIEN SKIES",
+    brief: "3050. A purple sky and alien soldiers everywhere. The signal led here. Fight your way toward the hive.",
+    win: "The hive is close. You can feel the ground shaking. One more fight." },
+  { era: "ww10", map: "front", goal: 6, title: "THE LAST STAND",
+    brief: "The hive's last defenders. Win this, and {me} and {other} can finally go home.",
+    win: "The hive collapses. A warm light opens, and the Jeffs step through, home at last." },
+];
+const HEROES = { sr: { name: "JEFF SR.", other: "Jeff Jr.", perk: "TOUGH · takes 20% less damage" }, jr: { name: "JEFF JR.", other: "Jeff Sr.", perk: "QUICK · runs 10% faster" } };
+let story = null, storyUI = false, storyMode = "select", hero = "sr", storyProg = 1;
+try { hero = localStorage.getItem("wow_hero") === "jr" ? "jr" : "sr"; storyProg = Math.max(1, Math.min(9, +localStorage.getItem("wow_story") || 1)); } catch (e) {}
+const heroMul = () => (story && hero === "sr" ? 0.8 : 1);
+const heroSpd = () => (story && hero === "jr" ? 1.1 : 1);
+const storyEl = document.getElementById("story"), storyTextEl = document.getElementById("storyText"), lvGridEl = document.getElementById("lvGrid"), heroRowEl = document.getElementById("heroRow");
+const storyGoEl = document.getElementById("storyGo"), storyBackEl = document.getElementById("storyBack"), storyBtn = document.getElementById("storyBtn");
+const sfill = s => s.replace(/\{me\}/g, hero === "sr" ? "Jeff Sr." : "Jeff Jr.").replace(/\{other\}/g, HEROES[hero].other);
+
+function showStory(mode) {
+  storyMode = mode; storyUI = true; document.body.classList.add("storyui"); mouseDown = false; adsHeld = false;
+  cardsEl.style.display = mapsEl.style.display = "none"; restartEl.style.display = "none"; tutBtn.style.display = storyBtn.style.display = "none"; exitTutBtn.style.display = "none";
+  overlay.style.display = "flex"; storyEl.style.display = "flex";
+  const sel = mode === "select", L = story ? STORY[story.lv] : null;
+  lvGridEl.style.display = heroRowEl.style.display = sel ? "flex" : "none";
+  storyGoEl.style.display = sel ? "none" : "block"; storyBackEl.style.display = "block";
+  if (sel) {
+    titleEl.textContent = "STORY MODE"; subEl.textContent = "Pick your hero, then choose a level.";
+    storyTextEl.textContent = "Play as Jeff Sr. or Jeff Jr. — the other one fights beside you. " + HEROES[hero].perk + ".";
+    lvGridEl.innerHTML = ""; heroRowEl.innerHTML = "";
+    for (const k of ["sr", "jr"]) { const b = document.createElement("div"); b.className = "chip" + (hero === k ? " sel" : ""); b.textContent = HEROES[k].name; b.onclick = ev => { ev.stopPropagation(); hero = k; try { localStorage.setItem("wow_hero", k); } catch (e) {} showStory("select"); }; heroRowEl.appendChild(b); }
+    STORY.forEach((d, i) => {
+      const b = document.createElement("div"), open = i < storyProg;
+      b.className = "lv" + (open ? "" : " lock") + (i === storyProg - 1 ? " cur" : ""); b.innerHTML = `<b>${open ? i + 1 : "🔒"}</b><i>${d.title}</i>`;
+      if (open) b.onclick = ev => { ev.stopPropagation(); story = { lv: i, goal: d.goal }; showStory("brief"); };
+      lvGridEl.appendChild(b);
+    });
+    storyBackEl.textContent = "BACK TO MENU";
+  } else {
+    storyBackEl.textContent = "LEVEL SELECT";
+    if (mode === "brief") { titleEl.textContent = `LEVEL ${story.lv + 1} · ${L.title}`; subEl.textContent = `${HEROES[hero].name}  ·  win by surviving ${L.goal} waves`; storyTextEl.textContent = sfill(L.brief); storyGoEl.textContent = "▶ START LEVEL"; }
+    else if (mode === "win") { const last = story.lv === STORY.length - 1; titleEl.textContent = last ? "THE END" : `LEVEL ${story.lv + 1} COMPLETE`; subEl.textContent = `Score ${score}`; storyTextEl.textContent = sfill(L.win) + (last ? "  Thanks for playing! Created by KrackedGames." : ""); storyGoEl.textContent = last ? "PLAY AGAIN FROM LEVEL 1" : "NEXT LEVEL ▶"; }
+    else { titleEl.textContent = "YOU DIED"; subEl.textContent = `Level ${story.lv + 1} · ${L.title} · reached wave ${wave} of ${L.goal}`; storyTextEl.textContent = "Get up. The Jeffs never quit."; storyGoEl.textContent = "RETRY LEVEL"; }
+  }
+}
+function storyPrimary() {
+  if (storyMode === "brief" || storyMode === "lose") beginLevel();
+  else if (storyMode === "win") { if (story.lv === STORY.length - 1) story.lv = 0; else story.lv++; story.goal = STORY[story.lv].goal; showStory("brief"); }
+}
+function beginLevel() {
+  const d = STORY[story.lv]; story.goal = d.goal; storyUI = false; document.body.classList.remove("storyui"); storyEl.style.display = "none";
+  state = "menu"; fresh = false; spawnPicked = false; spawnIdx = Math.floor(Math.random() * SPAWNS.length);
+  selectTheme(d.era); startGame();
+}
+function storyWin() {
+  state = "menu"; mouseDown = false; adsHeld = false; document.exitPointerLock && document.exitPointerLock();
+  if (story.lv + 2 > storyProg) { storyProg = Math.min(9, story.lv + 2); try { localStorage.setItem("wow_story", String(storyProg)); } catch (e) {} }
+  noise(0.2, 0.2); beep(660, 0.12, "triangle", 0.1, 300); beep(990, 0.2, "triangle", 0.08, 200);
+  showStory("win");
+}
+function leaveStory() {                                                       // back to the main menu
+  story = null; storyUI = false; document.body.classList.remove("storyui"); storyEl.style.display = "none"; exitTutorial();
+}
+storyBtn.addEventListener("click", ev => { ev.stopPropagation(); if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); story = { lv: Math.min(storyProg, 9) - 1, goal: 0 }; showStory("select"); });
+storyGoEl.addEventListener("click", ev => { ev.stopPropagation(); storyPrimary(); });
+storyBackEl.addEventListener("click", ev => { ev.stopPropagation(); if (storyMode === "select") leaveStory(); else { state = state === "dead" || state === "menu" ? state : "menu"; showStory("select"); } });
+storyEl.addEventListener("click", ev => ev.stopPropagation());
 
 // ===================== per-frame render sync: entities, camera, viewmodel =====================
 const gunSun = new THREE.DirectionalLight(0xffffff, 2.2); gunSun.position.set(-1.2, 2, 1.2); gunScene.add(gunSun);
@@ -2841,7 +2947,7 @@ function drawHUD() {
   hud.restore();
   hud.fillStyle = A; hud.beginPath(); hud.moveTo(cx2, cy2 - 15 * u); hud.lineTo(cx2 - 5 * u, cy2 - 22 * u); hud.lineTo(cx2 + 5 * u, cy2 - 22 * u); hud.closePath(); hud.fill();
   hud.font = font(12); hud.textAlign = "center"; hud.fillStyle = "rgba(255,255,255,0.85)";
-  hud.fillText(tut ? `TRAINING ARENA   ·   STEP ${tut.step + 1} / ${TUT_STEPS.length}` : range ? `SHOOTING RANGE   ·   ${TH.key === "ww1" ? "WWI" : TH.key === "ww3" ? "WW3" : "WW10"}` : `WAVE ${wave}   ·   HOSTILES ${enemies.length}   ·   ALLIES ${allies.length}` + (range || wallsOn ? "" : "   ·   WALLS OFF") + (!range && !tut && themeKey === "ww1" && mapKey !== "front" ? "   ·   " + MAPS[mapKey].name : ""), cx2, cy2 + 30 * u);
+  hud.fillText(tut ? `TRAINING ARENA   ·   STEP ${tut.step + 1} / ${TUT_STEPS.length}` : story ? `LEVEL ${story.lv + 1}  ·  ${STORY[story.lv].title}  ·  WAVE ${wave} / ${story.goal}  ·  ${HEROES[hero].name}` : range ? `SHOOTING RANGE   ·   ${TH.key === "ww1" ? "WWI" : TH.key === "ww3" ? "WW3" : "WW10"}` : `WAVE ${wave}   ·   HOSTILES ${enemies.length}   ·   ALLIES ${allies.length}` + (range || wallsOn ? "" : "   ·   WALLS OFF") + (!range && !tut && !story && themeKey === "ww1" && mapKey !== "front" ? "   ·   " + MAPS[mapKey].name : ""), cx2, cy2 + 30 * u);
 
   // ---- kill feed + score ----
   hud.textAlign = "right"; let ky = 38 * u;
@@ -2855,7 +2961,7 @@ function drawHUD() {
 
   // ---- banners ----
   hud.textAlign = "center";
-  if (waveBanner > 0) { hud.globalAlpha = Math.min(1, waveBanner); hud.font = font(46); hud.fillStyle = "#fff"; hud.shadowColor = "rgba(0,0,0,0.6)"; hud.shadowBlur = 8; hud.fillText(`WAVE ${wave}`, W / 2, H * 0.22); hud.font = font(15); hud.fillStyle = A; hud.fillText("ELIMINATE ALL HOSTILES", W / 2, H * 0.22 + 34 * u); hud.shadowBlur = 0; hud.globalAlpha = 1; }
+  if (waveBanner > 0) { hud.globalAlpha = Math.min(1, waveBanner); hud.font = font(46); hud.fillStyle = "#fff"; hud.shadowColor = "rgba(0,0,0,0.6)"; hud.shadowBlur = 8; hud.fillText(story ? `WAVE ${wave} / ${story.goal}` : `WAVE ${wave}`, W / 2, H * 0.22); hud.font = font(15); hud.fillStyle = A; hud.fillText("ELIMINATE ALL HOSTILES", W / 2, H * 0.22 + 34 * u); hud.shadowBlur = 0; hud.globalAlpha = 1; }
   if (toast > 0) { hud.globalAlpha = Math.min(1, toast * 2); hud.font = font(18); hud.fillStyle = A; hud.fillText(toastText, W / 2, H * 0.3); hud.globalAlpha = 1; }
   if (range && state === "play") drawRange(W, H, u, font, A);
   if (tut && state === "play") drawTutorial(W, H, u, font, A);
@@ -3050,7 +3156,7 @@ function selectTheme(key) {
   for (const c of cardsEl.children) c.classList.toggle("sel", c.dataset.t === key);
   if (state === "menu") subEl.textContent = TH.sub;
   for (const c of chipsEl.children) c.style.display = key === "ww1" || c.dataset.m === "range" || c.dataset.m === "challenge" ? "" : "none";
-  if (key !== "ww1" && !isRange() && mapKey !== "front") selectMap("front");
+  if (!story && key !== "ww1" && !isRange() && mapKey !== "front") selectMap("front");
   document.documentElement.dataset.theme = key;
   if (state === "menu") { reset(); fresh = true; P.pitch = 0.05; }
 }
@@ -3066,6 +3172,7 @@ for (const c of chipsEl.children) c.addEventListener("click", ev => { ev.stopPro
 
 function startGame() {
   if (state === "dying") return;
+  if (storyUI) { storyPrimary(); return; }
   if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
   if (actx.state === "suspended") actx.resume();
   if (touchMode) goFullscreenLandscape();
@@ -3073,15 +3180,15 @@ function startGame() {
     if (!spawnPicked) spawnIdx = Math.floor(Math.random() * SPAWNS.length);
     spawnPicked = false; reset();
   }
-  fresh = false; state = "play"; restartEl.style.display = "none"; tutBtn.style.display = "none"; exitTutBtn.style.display = "none"; overlay.style.display = "none";
+  fresh = false; state = "play"; restartEl.style.display = "none"; tutBtn.style.display = "none"; storyBtn.style.display = "none"; exitTutBtn.style.display = "none"; overlay.style.display = "none";
   try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (err) {}
 }
 function pause() {
   if (state !== "play") return;
   state = "paused"; mouseDown = false; adsHeld = false; autoFire = false;
   titleEl.textContent = "PAUSED"; subEl.textContent = ""; cardsEl.style.display = "none"; mapsEl.style.display = "none"; restartEl.style.display = "none";
-  releaseTouch(); tutBtn.style.display = "none"; bloodBtn.style.display = "block"; exitTutBtn.style.display = tut || range ? "block" : "none"; exitTutBtn.textContent = tut ? "EXIT TUTORIAL" : "LEAVE RANGE";
-  setHint(tut ? "Press L or click to resume  ·  X to exit the tutorial" : range ? "Press L or click to resume  ·  X to leave the range" : "Press L or click to resume", "Tap anywhere to resume"); overlay.style.display = "flex";
+  releaseTouch(); tutBtn.style.display = storyBtn.style.display = "none"; bloodBtn.style.display = "block"; exitTutBtn.style.display = tut || range || story ? "block" : "none"; exitTutBtn.textContent = tut ? "EXIT TUTORIAL" : story ? "LEAVE STORY" : "LEAVE RANGE";
+  setHint(tut ? "Press L or click to resume  ·  X to exit the tutorial" : story ? "Press L or click to resume  ·  X to leave story mode" : range ? "Press L or click to resume  ·  X to leave the range" : "Press L or click to resume", "Tap anywhere to resume"); overlay.style.display = "flex";
 }
 tutBtn.addEventListener("click", ev => { ev.stopPropagation(); startTutorial(); });
 bloodBtn.addEventListener("click", ev => { ev.stopPropagation(); setNoBlood(!noBlood); });
@@ -3089,7 +3196,7 @@ setNoBlood(noBlood);
 overlay.addEventListener("click", startGame);
 document.addEventListener("pointerlockchange", () => { if (document.pointerLockElement !== canvas) pause(); });
 
-exitTutBtn.addEventListener("click", ev => { ev.stopPropagation(); exitTutorial(); });
+exitTutBtn.addEventListener("click", ev => { ev.stopPropagation(); leaveStory(); });
 function setWalls(on, announce) {
   wallsOn = on; try { localStorage.setItem("wow_walls", on ? "1" : "0"); } catch (e) {}
   if (world && world.walls) world.walls.visible = on;
@@ -3114,10 +3221,10 @@ addEventListener("keydown", e => {
     if (e.code === "KeyL" && TUT_STEPS[tut.step].final) { finishTutorial(); return; }
     if (e.code === "KeyX" && TUT_STEPS[tut.step].final) { exitTutorial(); return; }
   }
-  if ((tut || range) && state === "paused" && e.code === "KeyX") { exitTutorial(); return; }
+  if ((tut || range || story) && state === "paused" && e.code === "KeyX") { leaveStory(); return; }
   if (range && state === "play" && e.code === "KeyY" && !e.repeat) { reset(); return; }
   if ((state === "menu" || state === "dead") && e.code === "KeyM") { const vis = MAP_ORDER.filter(k => themeKey === "ww1" || k === "range" || k === "challenge"); selectMap(vis[(vis.indexOf(mapKey) + 1) % vis.length]); }
-  if (state === "menu" && e.code === "KeyH") { startTutorial(); return; }
+  if (state === "menu" && e.code === "KeyH" && !storyUI) { startTutorial(); return; }
   if (e.code === "KeyB" && state !== "play" && state !== "dying") setNoBlood(!noBlood);
   if (e.code === "KeyV" && !e.repeat && state !== "dying" && state !== "dead") setWalls(!wallsOn, state === "play");
   if (e.code === "KeyN" && state === "play") adsHeld = true;                       // hold N (or right-click) to aim
@@ -3221,4 +3328,4 @@ addEventListener("keydown", e => {
 </body>
 </html>
 
-<!-- build 1793574527 -->
+<!-- build 1793574755 -->

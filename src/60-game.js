@@ -349,7 +349,7 @@ function explode(g) {
     if (d < RADm && ok(a.x, a.y)) { a.hp -= Math.round(60 * (1 - d / RADm)); a.pain = 0.3; if (a.hp <= 0) killAlly(a, { dir: new THREE.Vector3(a.x - pc, 0, a.y - pyc), kind: "blast", power: 1 - d / RADm }); }
   }
   const dp = Math.hypot(P.x - pc, P.y - pyc) * CELL;
-  if (dp < 7 && ok(P.x, P.y)) { P.hp -= Math.round(60 * (1 - dp / 7)); hurt = 0.7; addDmgInd(pc, pyc); }
+  if (dp < 7 && ok(P.x, P.y)) { P.hp -= Math.round(60 * (1 - dp / 7) * heroMul()); hurt = 0.7; addDmgInd(pc, pyc); }
 }
 function updateGrenades(dt) {
   for (let i = grenades.length - 1; i >= 0; i--) {
@@ -466,7 +466,7 @@ function update(dt) {
   P.moving = len > 0 || P.jz > 0;
   if (len > 0) {
     const sprint = running() && adsAmt < 0.3;
-    const sp = (sprint ? 4.6 : 3.1) * (P.w === "knife" ? 1.12 : 1) * (1 - adsAmt * 0.45) * speedF * dt / len;
+    const sp = (sprint ? 4.6 : 3.1) * heroSpd() * (P.w === "knife" ? 1.12 : 1) * (1 - adsAmt * 0.45) * speedF * dt / len;
     tryMove(P, mx * sp, my * sp);
     bob += dt * (sprint ? 12 : 8);
   }
@@ -524,7 +524,7 @@ function update(dt) {
       if (hit) {
         const dmg = T.dmg[0] + Math.floor(Math.random() * (T.dmg[1] - T.dmg[0] + 1));
         if (tgtA) { tgtA.hp -= Math.round(dmg * 0.7); tgtA.pain = 0.2; if (tgtA.hp <= 0) killAlly(tgtA, { dir: new THREE.Vector3(tgtA.x - e.x, 0, tgtA.y - e.y), kind: "bullet" }); }
-        else { P.hp -= dmg; hurt = 0.4; shake = Math.max(shake, 0.3); camKick += 0.02; addDmgInd(e.x, e.y); beep(80, 0.2, "sawtooth", 0.15, -40); }
+        else { P.hp -= Math.max(1, Math.round(dmg * heroMul())); hurt = 0.4; shake = Math.max(shake, 0.3); camKick += 0.02; addDmgInd(e.x, e.y); beep(80, 0.2, "sawtooth", 0.15, -40); }
       }
     }
   }
@@ -541,7 +541,7 @@ function update(dt) {
   updateGrenades(dt);
   if (tut) tutUpdate(dt);
   if (range) rangeUpdate(dt);
-  if (P.hp > 0 && enemies.length === 0 && !tut && !range) nextWave();
+  if (P.hp > 0 && enemies.length === 0 && !tut && !range) { if (story && wave >= story.goal) storyWin(); else nextWave(); }
 
   recoil = Math.max(0, recoil - dt * 7); flash = Math.max(0, flash - dt); hurt = Math.max(0, hurt - dt); hitMark = Math.max(0, hitMark - dt);
   toast = Math.max(0, toast - dt); shake = Math.max(0, shake - dt * 1.5); waveBanner = Math.max(0, waveBanner - dt); boom = Math.max(0, boom - dt);
@@ -563,5 +563,6 @@ function updateDying(dt) {
     cardsEl.style.display = "flex"; mapsEl.style.display = "flex"; restartEl.style.display = "block"; tutBtn.style.display = "block";
     setHint("← → switch era · 1–5 pick spawn · or click / press L", "Tap an era (or anywhere) to play again");
     overlay.style.display = "flex";
+    if (story) showStory("lose");
   }
 }

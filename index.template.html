@@ -44,6 +44,20 @@
   .chip:hover { border-color: var(--accent); color: #fff; }
   .chip.sel { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 10px var(--accent); }
   #mapNote { font-size: 13px !important; color: #aaa !important; min-height: 18px; }
+  #storyBtn { margin: 8px 0 4px; padding: 10px 22px; border: 2px solid #ffd24a; border-radius: 6px; background: rgba(60,40,0,.55); color: #ffd24a; font-weight: 700; letter-spacing: 3px; cursor: pointer; transition: transform .12s, box-shadow .12s; }
+  #storyBtn span { display: block; font-weight: 400; letter-spacing: 1px; font-size: 12px; color: #ddd; margin-top: 3px; }
+  #storyBtn:hover { transform: translateY(-2px); box-shadow: 0 0 16px #ffd24a; }
+  body.storyui #opts, body.storyui .keys, body.storyui .touchkeys, body.storyui #hint, body.storyui #iosTip, body.storyui #credit { display: none !important; }
+  #story { display: none; flex-direction: column; align-items: center; gap: 10px; max-width: 760px; margin-top: 6px; }
+  #storyText { font-size: 17px !important; color: #eee !important; line-height: 1.5; margin: 6px 0 !important; }
+  #heroRow { display: flex; gap: 10px; }
+  #lvGrid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .lv { width: 118px; box-sizing: border-box; padding: 10px 6px; border: 2px solid #777; border-radius: 6px; background: rgba(20,20,20,.85); cursor: pointer; }
+  .lv b { display: block; font-size: 24px; color: #fff; } .lv i { display: block; font-style: normal; font-size: 11px; color: #bbb; margin-top: 2px; letter-spacing: 1px; }
+  .lv.cur { border-color: #ffd24a; box-shadow: 0 0 14px #ffd24a; } .lv.lock { opacity: .4; cursor: default; }
+  .lv:not(.lock):hover { border-color: #fff; }
+  #storyBtns { display: flex; gap: 12px; margin-top: 6px; }
+  #storyGo { border-color: #6f9; color: #6f9; padding: 10px 24px; font-size: 14px; }
   #tutBtn { margin: 6px 0 4px; padding: 10px 22px; border: 2px solid var(--accent); border-radius: 6px; background: rgba(0,0,0,.55); color: #fff; font-weight: 700; letter-spacing: 3px; cursor: pointer; transition: transform .12s, box-shadow .12s; }
   #tutBtn span { display: block; font-weight: 400; letter-spacing: 1px; font-size: 12px; color: #bbb; margin-top: 3px; }
   #tutBtn:hover { transform: translateY(-2px); box-shadow: 0 0 16px var(--accent); }
@@ -103,6 +117,7 @@
     .card i { margin: 2px 0; font-size: 11px; } .card span { display: none; } .card b { font-size: 14px; }
     #tutBtn { padding: 6px 14px; } #tutBtn span { display: none; }
     .optb { padding: 5px 10px; font-size: 10px; }
+    .lv { width: 92px; padding: 5px 4px; } .lv b { font-size: 16px; } .lv i { font-size: 9px; } #storyText { font-size: 13px !important; margin: 2px 0 !important; } #story { gap: 5px; } #storyBtn { padding: 6px 14px; } #storyBtn span { display: none; }
     .chip { padding: 4px 8px; font-size: 10px; letter-spacing: 1px; } #mapNote { font-size: 11px !important; min-height: 0; }
   }
 </style>
@@ -128,6 +143,8 @@
   <div id="maps"><div id="chips">
     <div class="chip" data-m="front">WESTERN FRONT</div><div class="chip" data-m="verdun">VERDUN</div><div class="chip" data-m="somme">THE SOMME</div><div class="chip" data-m="gallipoli">GALLIPOLI</div><div class="chip" data-m="ypres">YPRES</div><div class="chip" data-m="range">SHOOTING RANGE</div><div class="chip" data-m="challenge">RANGE CHALLENGE</div>
   </div><p id="mapNote"></p></div>
+  <div id="storyBtn">★ STORY MODE <span>9 levels · play as Jeff Sr. or Jeff Jr.</span></div>
+  <div id="story"><div id="heroRow"></div><p id="storyText"></p><div id="lvGrid"></div><div id="storyBtns"><div class="optb" id="storyGo">START</div><div class="optb" id="storyBack">BACK</div></div></div>
   <div id="tutBtn">▶ TUTORIAL <span>learn the controls in a training arena<em class="dk">  (H)</em></span></div>
   <div id="installBtn">⬇ INSTALL AS APP <span>adds a desktop icon, works offline</span></div>
   <div id="opts"><div class="optb" id="bloodBtn">BLOOD: OFF</div><div class="optb" id="wallsBtn">WALLS: ON</div><div class="optb" id="gfxBtn">GRAPHICS: AUTO</div><div class="optb" id="ctlBtn">CONTROLS: AUTO</div></div>

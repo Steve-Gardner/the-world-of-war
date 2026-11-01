@@ -108,8 +108,8 @@ MAPS.challenge.look = MAPS.range.look;
 const MAP_ORDER = ["front", "verdun", "somme", "gallipoli", "ypres", "range", "challenge"];
 let mapKey = "front";
 try { const k = localStorage.getItem("wow_map"); if (MAPS[k]) mapKey = k; } catch (e) {}
-const isRange = () => mapKey === "range" || mapKey === "challenge";           // the range exists in every era
-const curMap = () => (themeKey === "ww1" || isRange() ? MAPS[mapKey] : MAPS.front);
+const isRange = () => !story && mapKey === "range" || mapKey === "challenge";           // the range exists in every era
+const curMap = () => (story ? MAPS[STORY[story.lv].map] : themeKey === "ww1" || isRange() ? MAPS[mapKey] : MAPS.front);
 const lookFor = T => (tut ? {} : isRange() ? (T.key === "ww1" ? MAPS.range.look : { craters: 0, noProps: true }) : T.key === "ww1" && curMap().look) || {};
 let mapH = null;                                                         // terrain shaper for the current map (read by groundH)
 let range = null;                                                        // shooting-range state (null when not on the range)

@@ -9,7 +9,7 @@ function selectTheme(key) {
   for (const c of cardsEl.children) c.classList.toggle("sel", c.dataset.t === key);
   if (state === "menu") subEl.textContent = TH.sub;
   for (const c of chipsEl.children) c.style.display = key === "ww1" || c.dataset.m === "range" || c.dataset.m === "challenge" ? "" : "none";
-  if (key !== "ww1" && !isRange() && mapKey !== "front") selectMap("front");
+  if (!story && key !== "ww1" && !isRange() && mapKey !== "front") selectMap("front");
   document.documentElement.dataset.theme = key;
   if (state === "menu") { reset(); fresh = true; P.pitch = 0.05; }
 }
@@ -25,6 +25,7 @@ for (const c of chipsEl.children) c.addEventListener("click", ev => { ev.stopPro
 
 function startGame() {
   if (state === "dying") return;
+  if (storyUI) { storyPrimary(); return; }
   if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
   if (actx.state === "suspended") actx.resume();
   if (touchMode) goFullscreenLandscape();
@@ -32,15 +33,15 @@ function startGame() {
     if (!spawnPicked) spawnIdx = Math.floor(Math.random() * SPAWNS.length);
     spawnPicked = false; reset();
   }
-  fresh = false; state = "play"; restartEl.style.display = "none"; tutBtn.style.display = "none"; exitTutBtn.style.display = "none"; overlay.style.display = "none";
+  fresh = false; state = "play"; restartEl.style.display = "none"; tutBtn.style.display = "none"; storyBtn.style.display = "none"; exitTutBtn.style.display = "none"; overlay.style.display = "none";
   try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (err) {}
 }
 function pause() {
   if (state !== "play") return;
   state = "paused"; mouseDown = false; adsHeld = false; autoFire = false;
   titleEl.textContent = "PAUSED"; subEl.textContent = ""; cardsEl.style.display = "none"; mapsEl.style.display = "none"; restartEl.style.display = "none";
-  releaseTouch(); tutBtn.style.display = "none"; bloodBtn.style.display = "block"; exitTutBtn.style.display = tut || range ? "block" : "none"; exitTutBtn.textContent = tut ? "EXIT TUTORIAL" : "LEAVE RANGE";
-  setHint(tut ? "Press L or click to resume  ·  X to exit the tutorial" : range ? "Press L or click to resume  ·  X to leave the range" : "Press L or click to resume", "Tap anywhere to resume"); overlay.style.display = "flex";
+  releaseTouch(); tutBtn.style.display = storyBtn.style.display = "none"; bloodBtn.style.display = "block"; exitTutBtn.style.display = tut || range || story ? "block" : "none"; exitTutBtn.textContent = tut ? "EXIT TUTORIAL" : story ? "LEAVE STORY" : "LEAVE RANGE";
+  setHint(tut ? "Press L or click to resume  ·  X to exit the tutorial" : story ? "Press L or click to resume  ·  X to leave story mode" : range ? "Press L or click to resume  ·  X to leave the range" : "Press L or click to resume", "Tap anywhere to resume"); overlay.style.display = "flex";
 }
 tutBtn.addEventListener("click", ev => { ev.stopPropagation(); startTutorial(); });
 bloodBtn.addEventListener("click", ev => { ev.stopPropagation(); setNoBlood(!noBlood); });
@@ -48,7 +49,7 @@ setNoBlood(noBlood);
 overlay.addEventListener("click", startGame);
 document.addEventListener("pointerlockchange", () => { if (document.pointerLockElement !== canvas) pause(); });
 
-exitTutBtn.addEventListener("click", ev => { ev.stopPropagation(); exitTutorial(); });
+exitTutBtn.addEventListener("click", ev => { ev.stopPropagation(); leaveStory(); });
 function setWalls(on, announce) {
   wallsOn = on; try { localStorage.setItem("wow_walls", on ? "1" : "0"); } catch (e) {}
   if (world && world.walls) world.walls.visible = on;
@@ -73,10 +74,10 @@ addEventListener("keydown", e => {
     if (e.code === "KeyL" && TUT_STEPS[tut.step].final) { finishTutorial(); return; }
     if (e.code === "KeyX" && TUT_STEPS[tut.step].final) { exitTutorial(); return; }
   }
-  if ((tut || range) && state === "paused" && e.code === "KeyX") { exitTutorial(); return; }
+  if ((tut || range || story) && state === "paused" && e.code === "KeyX") { leaveStory(); return; }
   if (range && state === "play" && e.code === "KeyY" && !e.repeat) { reset(); return; }
   if ((state === "menu" || state === "dead") && e.code === "KeyM") { const vis = MAP_ORDER.filter(k => themeKey === "ww1" || k === "range" || k === "challenge"); selectMap(vis[(vis.indexOf(mapKey) + 1) % vis.length]); }
-  if (state === "menu" && e.code === "KeyH") { startTutorial(); return; }
+  if (state === "menu" && e.code === "KeyH" && !storyUI) { startTutorial(); return; }
   if (e.code === "KeyB" && state !== "play" && state !== "dying") setNoBlood(!noBlood);
   if (e.code === "KeyV" && !e.repeat && state !== "dying" && state !== "dead") setWalls(!wallsOn, state === "play");
   if (e.code === "KeyN" && state === "play") adsHeld = true;                       // hold N (or right-click) to aim
